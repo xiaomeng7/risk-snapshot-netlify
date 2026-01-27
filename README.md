@@ -21,8 +21,31 @@
 
 ## 部署
 
-可以部署到任何静态网站托管服务，如：
-- Netlify
-- GitHub Pages
+### Netlify 部署（推荐）
+
+**最快方式：**
+1. 访问 https://app.netlify.com
+2. 登录后，将整个项目文件夹拖拽到部署区域
+3. 几秒钟后网站即可访问
+
+**连接 GitHub（自动部署）：**
+1. 在 Netlify 点击 "Add new site" → "Import an existing project"
+2. 选择 GitHub 并授权
+3. 选择 `xiaomeng7/risk-snapshot-netlify` 仓库
+4. 点击 "Deploy site"
+
+详细步骤请查看 [NETLIFY_DEPLOY.md](./NETLIFY_DEPLOY.md)
+
+### GitHub Pages
+
+1. 访问仓库设置：https://github.com/xiaomeng7/risk-snapshot-netlify/settings/pages
+2. Source 选择 "Deploy from a branch"
+3. 选择 `main` 分支和 `/ (root)` 文件夹
+4. 网站地址：https://xiaomeng7.github.io/risk-snapshot-netlify/
+
+### 其他平台
+
+也可以部署到：
 - Vercel
+- Cloudflare Pages
 - 或其他静态托管服务
