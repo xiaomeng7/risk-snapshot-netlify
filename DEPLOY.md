@@ -23,18 +23,33 @@ git branch -M main
 git push -u origin main
 ```
 
-## 步骤 3: 启用 GitHub Pages（可选）
+## 步骤 3: 启用 GitHub Pages（重要！）
 
-如果你想将网站托管在 GitHub Pages：
+**如果遇到 404 错误，请按照以下步骤启用 GitHub Pages：**
 
-1. 进入仓库的 Settings
-2. 点击左侧的 "Pages"
-3. 在 Source 下选择 "Deploy from a branch"
-4. 选择 "main" 分支和 "/ (root)" 文件夹
-5. 点击 Save
+1. 访问你的仓库设置页面：
+   ```
+   https://github.com/xiaomeng7/risk-snapshot-netlify/settings/pages
+   ```
 
-网站将在以下地址可用：
-`https://YOUR_USERNAME.github.io/risk-snapshot-netlify/risk-snapshot.html`
+2. 在 "Source" 部分：
+   - 选择 "Deploy from a branch"
+   - Branch 选择：`main`
+   - Folder 选择：`/ (root)`
+   - 点击 "Save" 按钮
+
+3. 等待几分钟（通常 1-3 分钟），GitHub 会构建你的网站
+
+4. 构建完成后，你会看到绿色的成功提示，显示你的网站地址
+
+5. 网站将在以下地址可用：
+   - 主页面：`https://xiaomeng7.github.io/risk-snapshot-netlify/`
+   - 或直接访问：`https://xiaomeng7.github.io/risk-snapshot-netlify/risk-snapshot.html`
+
+**注意：**
+- 如果仓库是 Private，需要升级到 GitHub Pro 才能使用 GitHub Pages
+- 首次启用后可能需要等待几分钟才能访问
+- 如果仍然显示 404，请检查仓库设置中的 Pages 是否显示 "Your site is live at..."
 
 ## 或者使用 Netlify 部署
 
