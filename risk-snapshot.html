@@ -4,6 +4,23 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Eligibility Check & Electrical Risk Snapshot</title>
+  
+  <!-- Google Analytics 4 (GA4) -->
+  <!-- 
+    IMPORTANT: Replace GA_MEASUREMENT_ID with your actual GA4 Measurement ID (e.g., G-XXXXXXX)
+    You need to replace it in TWO places:
+    1. In the script src URL below: id=GA_MEASUREMENT_ID
+    2. In the gtag('config', 'GA_MEASUREMENT_ID') call below
+    3. In the JavaScript constant GA_MEASUREMENT_ID in the script section
+  -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'GA_MEASUREMENT_ID');
+  </script>
+  
   <style>
     :root{
       --bg:#0b0c10;
@@ -324,6 +341,10 @@
   // Configuration / Content
   // -----------------------------
 
+  // TODO: Replace GA_MEASUREMENT_ID with your actual GA4 Measurement ID (e.g., G-XXXXXXX)
+  // This ID should match the one in the <head> gtag script above
+  const GA_MEASUREMENT_ID = "GA_MEASUREMENT_ID";
+
   // Replace this with your real "Learn more" page URL on your website later.
   // Example: "/independent-assessment"
   const LEARN_MORE_URL = "#";
@@ -401,8 +422,29 @@
     stage: 1,     // 1 eligibility, 2 snapshot, 3 result, 4 contact form, 5 success
     index: 0,     // question index within stage; intro uses -1
     answers: {},
-    lead: null
+    lead: null,
+    _tracked: {}  // Track events that have been sent to avoid duplicates
   };
+
+  // -----------------------------
+  // Analytics / Tracking
+  // -----------------------------
+  
+  /**
+   * Safe tracking function for GA4 events
+   * Silently fails if gtag is not available (e.g., ad blockers, dev environment)
+   * @param {string} eventName - Event name to track
+   * @param {object} params - Optional event parameters
+   */
+  function track(eventName, params = {}){
+    try {
+      if (typeof gtag !== 'undefined' && gtag) {
+        gtag('event', eventName, params);
+      }
+    } catch (e) {
+      // Silently ignore tracking errors (e.g., ad blockers, network issues)
+    }
+  }
 
   // -----------------------------
   // Helpers
@@ -446,6 +488,8 @@
     m.style.display = "flex";
     document.body.style.overflow = "hidden";
     prefillQuickCallFromLead();
+    // Track quick call modal open
+    track('quick_call_open');
   }
   function closeCallModal(){
     const m = $("callModal");
@@ -659,6 +703,14 @@ ${payload.notes}
     setActiveStepTag(1);
     $("timeText").textContent = "~5 minutes total";
     const eligible = isEligible();
+    
+    // Track eligibility completion (only once, avoid duplicate events on re-render)
+    const trackKey = 'eligibility_complete';
+    if (!state._tracked[trackKey]) {
+      track('eligibility_complete', { eligible: eligible ? 'yes' : 'no' });
+      state._tracked[trackKey] = true;
+    }
+    
     const el = document.createElement("div");
 
     if (!eligible){
@@ -711,6 +763,13 @@ ${payload.notes}
     setActiveStepTag(3);
     $("timeText").textContent = "";
     const uncertain = snapshotUncertaintyFlag();
+    
+    // Track snapshot completion (only once, avoid duplicate events on re-render)
+    const trackKey = 'snapshot_complete';
+    if (!state._tracked[trackKey]) {
+      track('snapshot_complete', { uncertainty: uncertain ? 'yes' : 'no' });
+      state._tracked[trackKey] = true;
+    }
 
     const el = document.createElement("div");
     el.innerHTML = `
@@ -776,6 +835,12 @@ ${payload.notes}
 
     el.querySelector("#restartBtn").addEventListener("click", () => restart());
     el.querySelector("#bookBtn").addEventListener("click", () => {
+      // Track lead form view (only once, avoid duplicate events on re-render)
+      const trackKey = 'lead_form_view';
+      if (!state._tracked[trackKey]) {
+        track('lead_form_view');
+        state._tracked[trackKey] = true;
+      }
       state.stage = 4;
       state.index = 0;
       render();
@@ -928,6 +993,9 @@ return el;
       // Build a pre-filled email draft (customer clicks Send to confirm)
       state.draftMailto = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
 
+      // Track lead submission
+      track('lead_submit', { method: 'email_confirm' });
+
       // Show success screen
       state.stage = 5;
       state.index = 0;
@@ -1047,8 +1115,9 @@ return el;
     state.index = -1;
     state.answers = {};
     state.lead = null;
-        state.draftMailto = null;
-computeProgress();
+    state.draftMailto = null;
+    state._tracked = {}; // Reset tracking flags on restart
+    computeProgress();
     render();
   }
 
@@ -1072,6 +1141,7 @@ computeProgress();
           </div>
         `;
         start.querySelector("#startBtn").addEventListener("click", () => {
+          track('snapshot_start');
           state.index = 0;
           render();
         });
@@ -1176,6 +1246,9 @@ computeProgress();
   document.addEventListener("DOMContentLoaded", () => {
     const m = document.getElementById("callModal");
     if (m) m.style.display = "none";
+    
+    // Track page open
+    track('page_open', { page: 'risk_snapshot' });
   });
 
   // Start
