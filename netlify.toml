@@ -4,11 +4,15 @@
   # 这是一个静态网站，不需要构建步骤
   publish = "."
 
-# 重定向规则 - 确保所有路由都指向 index.html
+# 首页为语言选择页（index.html）；中英文用下面短链接也可访问
 [[redirects]]
-  from = "/*"
+  from = "/en"
   to = "/risk-snapshot.html"
-  status = 200
+  status = 302
+[[redirects]]
+  from = "/zh"
+  to = "/risk-snapshot_zh_v2.html"
+  status = 302
 
 # 自定义 404 页面（可选）
 # [[redirects]]
