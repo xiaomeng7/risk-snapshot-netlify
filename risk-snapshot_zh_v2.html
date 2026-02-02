@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>电路风险快照 | Better Home Technology</title>
+  <meta name="description" content="3–4分钟电路风险自测（非检测、非报价）。帮助投资房主判断是否需要进一步做独立评估。" />
+
+  <!-- ✅ 颜色模式：跟随系统（白天浅色，夜间深色） -->
+  <style>
+    :root{
+      --bg: #ffffff;
+      --card: #f6f7f9;
+      --text: #0f172a;
+      --muted: #475569;
+      --line: #e2e8f0;
+      --primary: #2563eb;
+      --primary-2:#1d4ed8;
+      --danger:#dc2626;
+      --warn:#f59e0b;
+      --ok:#16a34a;
+      --shadow: 0 10px 30px rgba(2,6,23,.08);
+      --radius: 16px;
+    }
+    @media (prefers-color-scheme: dark){
+      :root{
+        --bg:#0b1220;
+        --card:#111a2e;
+        --text:#e5e7eb;
+        --muted:#9ca3af;
+        --line:#24314d;
+        --primary:#60a5fa;
+        --primary-2:#3b82f6;
+        --shadow: 0 10px 30px rgba(0,0,0,.35);
+      }
+    }
+    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;}
+    .wrap{max-width:860px;margin:0 auto;padding:24px 16px 56px;}
+    header{display:flex;gap:14px;align-items:center;margin:10px 0 18px;}
+    .logo{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--primary),#22c55e);box-shadow:var(--shadow);}
+    h1{font-size:22px;margin:0;}
+    .sub{color:var(--muted);font-size:14px;margin-top:2px;}
+    .pill{display:inline-flex;gap:8px;align-items:center;padding:8px 12px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:13px;}
+    .grid{display:grid;grid-template-columns:1fr;gap:14px;margin-top:14px;}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;}
+    .card h2{font-size:18px;margin:0 0 8px;}
+    .card p{margin:8px 0;color:var(--muted);}
+    .btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;}
+    button,.btn{
+      border:0;border-radius:12px;padding:12px 14px;font-weight:600;cursor:pointer;
+      background:var(--primary);color:white;box-shadow:0 8px 18px rgba(37,99,235,.22);
+      transition:transform .06s ease, background .12s ease;
+      text-decoration:none;display:inline-flex;align-items:center;justify-content:center;
+    }
+    button:hover,.btn:hover{background:var(--primary-2);}
+    button:active,.btn:active{transform:translateY(1px);}
+    .btn-ghost{background:transparent;color:var(--text);border:1px solid var(--line);box-shadow:none;}
+    .btn-ghost:hover{background:rgba(148,163,184,.12);}
+    .btn-danger{background:var(--danger);}
+    .btn-danger:hover{filter:brightness(.95);}
+    .small{font-size:13px;color:var(--muted);margin-top:10px;}
+    .step{display:none;}
+    .step.active{display:block;}
+    .step1-page{display:none;}
+    .step1-page.active{display:block;}
+    .qtitle{font-size:18px;margin:0 0 10px;}
+    .opt{display:flex;flex-direction:column;gap:10px;margin-top:8px;}
+    .opt label{
+      display:flex;gap:10px;align-items:flex-start;background:rgba(148,163,184,.10);
+      border:1px solid var(--line);border-radius:14px;padding:12px 12px;cursor:pointer;
+    }
+    input[type=radio]{margin-top:3px;}
+    .nav{display:flex;justify-content:space-between;gap:10px;margin-top:16px;}
+    .note{font-size:12px;color:var(--muted);margin-top:10px;}
+    .divider{height:1px;background:var(--line);margin:16px 0;}
+    .badge{display:inline-flex;gap:8px;align-items:center;font-size:13px;color:var(--muted);}
+    .dot{width:10px;height:10px;border-radius:50%;background:var(--ok);}
+    .dot.warn{background:var(--warn);}
+    .dot.danger{background:var(--danger);}
+    /* Modal */
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:14px;z-index:50;}
+    .overlay.show{display:flex;}
+    .modal{
+      width:min(760px,100%);
+      max-height:min(88vh,720px);
+      background:var(--bg);
+      border:1px solid var(--line);
+      border-radius:18px;
+      box-shadow:0 18px 50px rgba(0,0,0,.35);
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    }
+    .modal-header,.modal-footer{
+      padding:14px 16px;
+      background:var(--card);
+      border-bottom:1px solid var(--line);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .modal-footer{border-top:1px solid var(--line);border-bottom:0;}
+    .modal-title{margin:0;font-size:16px;}
+    .modal-body{padding:16px;overflow:auto;}
+    .x{background:transparent;border:1px solid var(--line);color:var(--text);box-shadow:none;border-radius:10px;padding:8px 10px;}
+    .form{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;}
+    .form .full{grid-column:1/-1;}
+    .field{display:flex;flex-direction:column;gap:6px;}
+    .field label{font-size:13px;color:var(--muted);}
+    .field input, .field select, .field textarea{
+      padding:12px;border-radius:12px;border:1px solid var(--line);
+      background:transparent;color:var(--text);
+    }
+    .field textarea{min-height:90px;resize:vertical;}
+    @media (max-width:720px){
+      .form{grid-template-columns:1fr;}
+    }
+    .success{padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(34,197,94,.10);color:var(--text);}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:12px;color:var(--muted);}
+  </style>
+
+  <!-- ✅ GA4：你可以保留同一个 Measurement ID，不需要为中文单独换。
+       只要你在微信转发链接里加 UTM（utm_source=wechat...），GA4 就能识别来源。
+       如果你已有 GA4 代码，请把下面这段替换成你现有的（保持一致即可）。 -->
+  <!--
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-XXXXXXXXXX');
+  </script>
+  -->
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <h1>电路风险快照</h1>
+        <div class="sub">3–4分钟自测（非上门检测｜非报价） · 帮你判断是否需要进一步做独立评估</div>
+      </div>
+    </header>
+
+    <!-- UTM 仅用于内部统计，不展示给用户 -->
+    <div class="pill" id="utmPill" style="display:none;"></div>
+
+    <!-- Step 1: 资格确认（每题一页） -->
+    <section class="card step active" id="step1">
+      <h2>Step 1｜是否适合你？（60秒资格确认）</h2>
+      <p class="step1-intro">这个服务更适合“希望减少扯皮、减少误判、希望提前规划”的房东。没有对错，只是确认是否相关。</p>
+
+      <div class="divider"></div>
+
+      <div class="step1-q step1-page active" data-q="0">
+        <div class="qtitle">你目前拥有多少套住宅房产？</div>
+        <div class="opt">
+          <label><input type="radio" name="own" value="0">0 套（我在考虑买入/正在看房）</label>
+          <label><input type="radio" name="own" value="1">1 套</label>
+          <label><input type="radio" name="own" value="2">2 套</label>
+          <label><input type="radio" name="own" value="3">3 套及以上</label>
+        </div>
+      </div>
+      <div class="step1-q step1-page" data-q="1">
+        <div class="qtitle">当需要做电气维修/升级决策时，你通常：</div>
+        <div class="opt">
+          <label><input type="radio" name="decide" value="self">自己处理，愿意研究细节</label>
+          <label><input type="radio" name="decide" value="delegate">更倾向交给专业人士/希望有独立建议</label>
+        </div>
+      </div>
+      <div class="step1-q step1-page" data-q="2">
+        <div class="qtitle">你更接近哪种状态？</div>
+        <div class="opt">
+          <label><input type="radio" name="time" value="have">我有时间参与管理细节</label>
+          <label><input type="radio" name="time" value="no">我希望尽量少参与，让事情自动运转</label>
+        </div>
+      </div>
+      <div class="step1-q step1-page" data-q="3">
+        <div class="qtitle">你是否愿意在做大额电气支出前，先为独立专业判断付费？</div>
+        <div class="opt">
+          <label><input type="radio" name="pay" value="yes">愿意</label>
+          <label><input type="radio" name="pay" value="no">暂时不考虑</label>
+        </div>
+      </div>
+
+      <div class="nav step1-nav">
+        <button class="btn-ghost" id="step1PrevBtn" style="visibility:hidden;">← 上一题</button>
+        <button id="step1NextBtn">下一题 →</button>
+      </div>
+      <div class="note">提示：这不是“问卷”，只是确认你是否属于我们为之设计的那类房东。</div>
+    </section>
+
+    <!-- Step 2: Snapshot -->
+    <section class="card step" id="step2">
+      <h2>Step 2｜电路风险快照（3–4分钟）</h2>
+      <p><strong>这不是上门检测</strong>，也<strong>不会产生报价</strong>。它是一份引导式自测，用于判断：你在电气决策上是否存在“信息不充分/信心不足”。</p>
+      <div class="divider"></div>
+
+      <div class="qtitle" id="qText">问题加载中…</div>
+      <div class="opt" id="qOptions"></div>
+
+      <div class="nav">
+        <button class="btn-ghost" id="prevBtn">← 上一题</button>
+        <button id="nextBtn">下一题 →</button>
+      </div>
+
+      <div class="note">没有对错。你的答案不代表房子一定有问题，只代表“决策是否足够有把握”。</div>
+    </section>
+
+    <!-- Step 3: Result -->
+    <section class="card step" id="step3">
+      <h2>Step 3｜结果与下一步</h2>
+      <p id="resultText">结果生成中…</p>
+
+      <div class="divider"></div>
+
+      <div class="badge"><span class="dot warn" id="dot"></span><span id="badgeText">提示</span></div>
+      <p class="small" id="resultHint"></p>
+
+      <div class="btns">
+        <button class="btn" id="learnMoreBtn">了解服务内容</button>
+        <button class="btn" id="quickCallBtn">快速预约电话沟通</button>
+        <a class="btn btn-ghost" id="emailBtn" href="#">邮件联系（自动填好内容）</a>
+      </div>
+
+      <div class="small">
+        <strong>联系邮箱：</strong>
+        <a href="mailto:info@bhtechnology.com.au">info@bhtechnology.com.au</a>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="small mono" id="debugLine"></div>
+    </section>
+  </div>
+
+  <!-- Quick Call Modal -->
+  <div class="overlay" id="overlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modalTitle">快速预约电话沟通（我们会按你选择的时间致电）</h3>
+        <button class="x" id="closeModalBtn" type="button">关闭</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="small">填写后，我们会在你选择的时间段内联系你。你也可以同时点击下方按钮，用邮件把信息发送给我们（邮件内容会自动填好）。</p>
+
+        <div class="form">
+          <div class="field">
+            <label>姓名</label>
+            <input id="name" type="text" placeholder="例如：张先生 / Lisa" />
+          </div>
+          <div class="field">
+            <label>电话</label>
+            <input id="phone" type="tel" placeholder="例如：04xx xxx xxx" />
+          </div>
+          <div class="field">
+            <label>邮箱</label>
+            <input id="email" type="email" placeholder="例如：name@email.com" />
+          </div>
+          <div class="field">
+            <label>房屋地址（建议填写）</label>
+            <input id="address" type="text" placeholder="例如：12 Smith St, Mawson Lakes SA" />
+          </div>
+          <div class="field">
+            <label>你希望我们什么时候联系你？</label>
+            <select id="slot">
+              <option value="">请选择</option>
+              <option>今天 / 1小时内（如可）</option>
+              <option>今天 下午（12pm–5pm）</option>
+              <option>今天 晚上（5pm–8pm）</option>
+              <option>明天 上午（9am–12pm）</option>
+              <option>明天 下午（12pm–5pm）</option>
+              <option>周末（请在备注说明时间）</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label>备注（可选）</label>
+            <textarea id="note" placeholder="例如：我主要担心租客反映跳闸；希望先了解是否需要上门评估。"></textarea>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="success" id="successBox" style="display:none;">
+          已收到！我们的顾问会尽快按你选择的时间联系你。  
+          <div class="small" style="margin-top:6px;">如果你愿意，也可以点击下方按钮把信息通过邮件发给我们（已自动填好）。</div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-ghost" id="emailRequestBtn" type="button">用邮件发送预约信息</button>
+        <button id="submitBtn" type="button">提交预约</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ---------- UTM display (helps you verify WeChat campaigns) ----------
+  function getParam(name){
+    const url = new URL(window.location.href);
+    return url.searchParams.get(name) || "";
+  }
+  const utm_source = getParam("utm_source");
+  const utm_medium = getParam("utm_medium");
+  const utm_campaign = getParam("utm_campaign");
+  const utm = [utm_source, utm_medium, utm_campaign].filter(Boolean).join(" / ");
+  document.getElementById("utmPill").textContent = utm ? ("来源标记：" + utm) : "来源：未标记（建议微信链接加 ?utm_source=wechat&utm_medium=social&utm_campaign=pm_cn）";
+
+  // ---------- Flow control ----------
+  const step1 = document.getElementById("step1");
+  const step2 = document.getElementById("step2");
+  const step3 = document.getElementById("step3");
+
+  function showStep(n){
+    [step1,step2,step3].forEach(el=>el.classList.remove("active"));
+    if(n===1) step1.classList.add("active");
+    if(n===2) step2.classList.add("active");
+    if(n===3) step3.classList.add("active");
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+
+  // ---------- Step 1: 每题一页 + Fit check ----------
+  const step1Pages = document.querySelectorAll(".step1-page");
+  const step1Intro = document.querySelector(".step1-intro");
+  let step1Idx = 0;
+
+  function showStep1Page(n){
+    step1Idx = n;
+    step1Pages.forEach((el,i)=>{ el.classList.toggle("active", i === n); });
+    step1Intro.style.display = (n === 0) ? "block" : "none";
+    document.getElementById("step1PrevBtn").style.visibility = (n === 0) ? "hidden" : "visible";
+    document.getElementById("step1NextBtn").textContent = (n === step1Pages.length - 1) ? "→ 继续：开始风险快照（3–4分钟）" : "下一题 →";
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+
+  document.getElementById("step1PrevBtn").addEventListener("click", ()=>{
+    if(step1Idx > 0) showStep1Page(step1Idx - 1);
+  });
+
+  document.getElementById("step1NextBtn").addEventListener("click", ()=>{
+    const names = ["own","decide","time","pay"];
+    const currentName = names[step1Idx];
+    const checked = document.querySelector(`input[name=${currentName}]:checked`);
+    if(!checked){
+      alert("请先选择一个选项。");
+      return;
+    }
+    if(step1Idx < step1Pages.length - 1){
+      showStep1Page(step1Idx + 1);
+    }else{
+      // 最后一题：做 fit check 并进入 Step 2
+      const pay = document.querySelector("input[name=pay]:checked")?.value || "";
+      if(pay === "no"){
+        if(!confirm("没关系，你仍然可以继续做风险快照（免费）。\n如果你之后需要更深入的独立评估，我们再讨论。现在继续吗？")){
+          return;
+        }
+      }
+      showStep(2);
+      renderQuestion();
+    }
+  });
+
+  // ---------- Snapshot questions (6 cards) ----------
+  const questions = [
+    {
+      text: "当有人建议做电方面的工作时，你通常会：",
+      options: [
+        "我会很快同意，但事后会想：真的有必要吗？",
+        "我会拖一拖，因为我不确定该不该做",
+        "我通常很有把握，知道该怎么判断"
+      ]
+    },
+    {
+      text: "你是否遇到过：同一个问题，不同电工给出不同意见或不同报价？",
+      options: [
+        "有，而且让我更难做决定",
+        "有，但我大概知道该怎么选",
+        "没有"
+      ]
+    },
+    {
+      text: "电工工作做完以后，你是否曾担心过安全或质量？",
+      options: [
+        "有过",
+        "没有"
+      ]
+    },
+    {
+      text: "你是否对这套房的整体电路状况有一个清晰的“全局认知”？",
+      options: [
+        "很清楚",
+        "一般",
+        "不太清楚"
+      ]
+    },
+    {
+      text: "你希望自己花多少时间来处理电相关的事情？",
+      options: [
+        "越少越好（能交给别人就交给别人）",
+        "我不介意必要时参与"
+      ]
+    },
+    {
+      text: "你更接近哪种偏好？",
+      options: [
+        "出问题再处理（反应式）",
+        "希望提前规划，即使现在没紧急问题（计划式）"
+      ]
+    }
+  ];
+
+  let idx = 0;
+  const answers = new Array(questions.length).fill(null);
+
+  const qText = document.getElementById("qText");
+  const qOptions = document.getElementById("qOptions");
+  const prevBtn = document.getElementById("prevBtn");
+  const nextBtn = document.getElementById("nextBtn");
+
+  function renderQuestion(){
+    const q = questions[idx];
+    qText.textContent = q.text;
+    qOptions.innerHTML = "";
+    q.options.forEach((opt, i)=>{
+      const id = `q${idx}_${i}`;
+      const label = document.createElement("label");
+      label.innerHTML = `<input type="radio" name="q${idx}" value="${i}" id="${id}"> ${opt}`;
+      qOptions.appendChild(label);
+      if(answers[idx] === i){
+        label.querySelector("input").checked = true;
+      }
+    });
+
+    prevBtn.disabled = (idx===0);
+    nextBtn.textContent = (idx===questions.length-1) ? "完成 →" : "下一题 →";
+  }
+
+  prevBtn.addEventListener("click", ()=>{
+    if(idx>0){ idx--; renderQuestion(); }
+  });
+
+  nextBtn.addEventListener("click", ()=>{
+    const picked = document.querySelector(`input[name=q${idx}]:checked`);
+    if(!picked){
+      alert("请选择一个选项。");
+      return;
+    }
+    answers[idx] = parseInt(picked.value,10);
+
+    if(idx < questions.length-1){
+      idx++; renderQuestion();
+    }else{
+      showResult();
+    }
+  });
+
+  // ---------- Result logic ----------
+  function score(){
+    // higher score = more uncertainty
+    let s = 0;
+    // Q1: option 0/1 indicate uncertainty
+    if(answers[0] === 0) s += 2;
+    if(answers[0] === 1) s += 2;
+    if(answers[0] === 2) s += 0;
+
+    // Q2
+    if(answers[1] === 0) s += 2;
+    if(answers[1] === 1) s += 1;
+    if(answers[1] === 2) s += 0;
+
+    // Q3
+    if(answers[2] === 0) s += 2;
+    if(answers[2] === 1) s += 0;
+
+    // Q4
+    if(answers[3] === 0) s += 0;
+    if(answers[3] === 1) s += 1;
+    if(answers[3] === 2) s += 2;
+
+    // Q5
+    if(answers[4] === 0) s += 1;
+    if(answers[4] === 1) s += 0;
+
+    // Q6
+    if(answers[5] === 0) s += 1;
+    if(answers[5] === 1) s += 0;
+
+    return s; // 0-10-ish
+  }
+
+  function showResult(){
+    const s = score();
+    const resultText = document.getElementById("resultText");
+    const dot = document.getElementById("dot");
+    const badgeText = document.getElementById("badgeText");
+    const hint = document.getElementById("resultHint");
+    const debug = document.getElementById("debugLine");
+
+    // Create a human-friendly interpretation
+    if(s <= 2){
+      dot.className = "dot";
+      badgeText.textContent = "你的决策信心较高";
+      resultText.innerHTML = "从你的回答来看，你在电气相关决策上通常比较有把握。";
+      hint.textContent = "这不代表“完全没风险”，只是说明你目前的决策不太受不确定性影响。如果你希望把未来 1–5 年可能的电气支出更系统地规划，也可以了解我们的独立评估。";
+    }else if(s <= 6){
+      dot.className = "dot warn";
+      badgeText.textContent = "存在一定不确定性";
+      resultText.innerHTML = "从你的回答来看，你在部分电气决策上可能存在信息不足或信心不足的情况。";
+      hint.textContent = "这不代表房子一定有问题。它只是提示：未来遇到电气支出或租客投诉时，你可能会更容易陷入‘要不要做/会不会被坑’的困境。独立评估可以把这些决策变得更清晰。";
+    }else{
+      dot.className = "dot danger";
+      badgeText.textContent = "不确定性较高，建议进一步确认";
+      resultText.innerHTML = "从你的回答来看，你目前在电气决策上可能经常处于“不确定/犹豫/意见不一致”的状态。";
+      hint.textContent = "当决策在压力下发生时（例如租客投诉、跳闸、紧急维修），最容易出现过度支出或责任风险。独立评估的目的，是在问题升级前给你一个可依据的判断和规划路径。";
+    }
+
+    debug.textContent = `（内部记录）score=${s} | utm=${utm || "none"}`;
+
+    // Update mailto link with prefilled content
+    updateMailto();
+
+    showStep(3);
+  }
+
+  // ---------- Buttons on result page ----------
+  document.getElementById("learnMoreBtn").addEventListener("click", ()=>{
+    alert("我们可以把独立评估理解为：\n\n① 现场数据采集（非破坏）\n② 风险优先级：哪些要马上关注、哪些可以计划、哪些可以忽略\n③ 未来 1–5 年预算参考（CapEx 规划范围）\n④ 给房东/中介一个可引用的第三方判断依据\n\n如果你希望进一步了解，建议点击“快速预约电话沟通”。");
+  });
+
+  const overlay = document.getElementById("overlay");
+  function openModal(){ overlay.classList.add("show"); overlay.setAttribute("aria-hidden","false"); }
+  function closeModal(){ overlay.classList.remove("show"); overlay.setAttribute("aria-hidden","true"); }
+  document.getElementById("quickCallBtn").addEventListener("click", openModal);
+  document.getElementById("closeModalBtn").addEventListener("click", closeModal);
+  overlay.addEventListener("click", (e)=>{ if(e.target === overlay) closeModal(); });
+
+  // ---------- Submit quick call (client-side demo) ----------
+  document.getElementById("submitBtn").addEventListener("click", ()=>{
+    // In MVP: we just show confirmation. Later: connect to backend / Calendly.
+    document.getElementById("successBox").style.display = "block";
+    updateMailto(true);
+  });
+
+  // ---------- Email requests ----------
+  function encode(s){ return encodeURIComponent(s); }
+
+  function buildEmailBody(includeForm=false){
+    const name = document.getElementById("name")?.value || "";
+    const phone = document.getElementById("phone")?.value || "";
+    const email = document.getElementById("email")?.value || "";
+    const address = document.getElementById("address")?.value || "";
+    const slot = document.getElementById("slot")?.value || "";
+    const note = document.getElementById("note")?.value || "";
+    const page = window.location.href;
+
+    let body = "";
+    body += "您好，BH Technology 团队：\n\n";
+    body += "我刚完成【电路风险快照】，希望了解是否需要进一步做独立评估。\n\n";
+    body += "【联系方式】\n";
+    if(name) body += `姓名：${name}\n`;
+    if(phone) body += `电话：${phone}\n`;
+    if(email) body += `邮箱：${email}\n`;
+    if(address) body += `地址：${address}\n`;
+    if(includeForm){
+      if(slot) body += `期望通话时间：${slot}\n`;
+      if(note) body += `备注：${note}\n`;
+    }
+    body += "\n【我的来源】\n";
+    body += `utm_source/medium/campaign：${utm || "未标记"}\n`;
+    body += `页面链接：${page}\n\n`;
+
+    body += "谢谢！\n";
+    body += "（提示：点击发送邮件后，如果你没有收到自动回复，我们也会在工作时间尽快联系你。）\n";
+    return body;
+  }
+
+  function updateMailto(includeForm=false){
+    const subject = "Request: Independent Electrical Risk Assessment / Callback";
+    const body = buildEmailBody(includeForm);
+
+    const mailto = `mailto:info@bhtechnology.com.au?subject=${encode(subject)}&body=${encode(body)}`;
+    document.getElementById("emailBtn").setAttribute("href", mailto);
+    document.getElementById("emailRequestBtn").setAttribute("href", mailto);
+  }
+
+  // In modal: use email button
+  document.getElementById("emailRequestBtn").addEventListener("click", ()=>{
+    updateMailto(true);
+    window.location.href = document.getElementById("emailRequestBtn").getAttribute("href");
+  });
+
+  // Also update when user types
+  ["name","phone","email","address","slot","note"].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.addEventListener("input", ()=>updateMailto(true));
+    if(el) el.addEventListener("change", ()=>updateMailto(true));
+  });
+</script>
+</body>
+</html>
