@@ -169,7 +169,7 @@
       </div>
       <div class="divider"></div>
       <div class="nav">
-        <button class="btn-ghost" id="learnMoreBtn0Zh">我想先了解更多</button>
+        <span></span>
         <button class="btn" id="startBtn0Zh">开始</button>
       </div>
     </section>
@@ -330,8 +330,8 @@
       </div>
 
       <div class="modal-footer">
-        <button class="btn-ghost" id="emailRequestBtn" type="button">用邮件发送预约信息</button>
-        <button id="submitBtn" type="button">提交预约</button>
+        <button class="btn" id="emailRequestBtn" type="button">提交预约（打开邮件）</button>
+        <button class="btn-ghost" id="closeModalBtn2" type="button">取消</button>
       </div>
     </div>
   </div>
@@ -371,10 +371,6 @@
   // ---------- Step 0: 价值引导 ----------
   const INSIGHT_GENERIC_ZH = "提示：如果您在做决定时经常需要“别人给您一个确定答案”，通常意味着缺少可验证的证据与优先级框架。";
   document.getElementById("startBtn0Zh").addEventListener("click", ()=>{ showStep(1); });
-  document.getElementById("learnMoreBtn0Zh").addEventListener("click", ()=>{
-    const c = document.getElementById("faqContentZh"); const t = document.getElementById("faqToggleZh");
-    if(c && t){ c.classList.toggle("open"); t.setAttribute("aria-expanded", c.classList.contains("open")); }
-  });
   document.getElementById("faqToggleZh").addEventListener("click", ()=>{
     const c = document.getElementById("faqContentZh"); const t = document.getElementById("faqToggleZh");
     if(c && t){ c.classList.toggle("open"); t.setAttribute("aria-expanded", c.classList.contains("open")); }
@@ -673,12 +669,28 @@
     alert("已发送，请查收邮箱。");
   });
 
-  // ---------- Submit quick call (client-side demo) ----------
-  document.getElementById("submitBtn").addEventListener("click", ()=>{
-    // In MVP: we just show confirmation. Later: connect to backend / Calendly.
-    document.getElementById("successBox").style.display = "block";
+  // ---------- Submit quick call (opens email client) ----------
+  document.getElementById("emailRequestBtn").addEventListener("click", ()=>{
+    const name = document.getElementById("name")?.value || "";
+    const phone = document.getElementById("phone")?.value || "";
+    const email = document.getElementById("email")?.value || "";
+    
+    if(!name || !phone || !email){
+      alert("请先填写姓名、电话和邮箱。");
+      return;
+    }
+    
+    // Update mailto link with form data, then open email client
     updateMailto(true);
+    const mailtoLink = document.getElementById("emailRequestBtn").getAttribute("href");
+    if(mailtoLink && mailtoLink !== "#"){
+      window.location.href = mailtoLink;
+    }
   });
+  
+  // Close modal button in footer
+  const closeModalBtn2 = document.getElementById("closeModalBtn2");
+  if(closeModalBtn2) closeModalBtn2.addEventListener("click", closeModal);
 
   // ---------- Email requests ----------
   function encode(s){ return encodeURIComponent(s); }
@@ -741,11 +753,7 @@
     document.getElementById("emailRequestBtn").setAttribute("href", mailto);
   }
 
-  // In modal: use email button
-  document.getElementById("emailRequestBtn").addEventListener("click", ()=>{
-    updateMailto(true);
-    window.location.href = document.getElementById("emailRequestBtn").getAttribute("href");
-  });
+  // emailRequestBtn click handler moved to "Submit quick call" section above
 
   // Also update when user types
   ["name","phone","email","address","slot","note"].forEach(id=>{

@@ -666,14 +666,9 @@ ${payload.notes}
       <div class="hr"></div>
       <div class="nav">
         <span></span>
-        <button class="ghost" id="learnMoreBtn0">Learn more</button>
         <button class="primary" id="startBtn0">Start</button>
       </div>
     `;
-    el.querySelector("#learnMoreBtn0").addEventListener("click", () => {
-      const c = $("faqContent"); const t = $("faqToggle");
-      if (c && t) { c.classList.toggle("open"); t.setAttribute("aria-expanded", c.classList.contains("open")); }
-    });
     el.querySelector("#startBtn0").addEventListener("click", () => {
       track('snapshot_start');
       state.stage = 1;
