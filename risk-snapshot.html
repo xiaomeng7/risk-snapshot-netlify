@@ -38,10 +38,11 @@
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
       background: radial-gradient(1000px 700px at 20% 0%, #14182a 0%, var(--bg) 55%);
       color:var(--text);
-      line-height:1.45;
+      line-height:1.55;
+      font-size: 18px;
     }
     .wrap{
-      max-width: 920px;
+      max-width: 860px;
       margin: 0 auto;
       padding: 28px 16px 60px;
     }
@@ -53,14 +54,14 @@
       margin-bottom:18px;
     }
     .brand{display:flex; flex-direction:column; gap:4px;}
-    .brand h1{font-size:18px; margin:0; letter-spacing:.2px;}
-    .brand p{margin:0; color:var(--muted); font-size:13px;}
+    .brand h1{font-size:22px; margin:0; letter-spacing:.2px;}
+    .brand p{margin:0; color:var(--muted); font-size:15px;}
     .pill{
       border:1px solid var(--border);
       background: rgba(255,255,255,.04);
-      padding:8px 10px;
+      padding:10px 14px;
       border-radius:999px;
-      font-size:12px;
+      font-size:14px;
       color:var(--muted);
       white-space:nowrap;
     }
@@ -68,16 +69,16 @@
       border:1px solid var(--border);
       background: rgba(255,255,255,.03);
       border-radius: 18px;
-      padding: 22px;
+      padding: 24px;
       box-shadow: 0 20px 60px rgba(0,0,0,.35);
     }
     .steps{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;}
     .stepTag{
-      padding:6px 10px;
+      padding:8px 12px;
       border-radius:999px;
       border:1px solid var(--border);
       color:var(--muted);
-      font-size:12px;
+      font-size:14px;
     }
     .stepTag.active{
       border-color: rgba(110,168,254,.55);
@@ -85,38 +86,40 @@
       background: rgba(110,168,254,.10);
     }
     .hr{height:1px; background:var(--border); margin:18px 0;}
-    h2{margin:0 0 8px; font-size:22px;}
-    h3{margin:0 0 8px; font-size:16px;}
-    .sub{margin:0 0 16px; color:var(--muted); font-size:14px;}
-    .qTitle{font-size:18px; margin:0 0 12px;}
-    .choices{display:grid; gap:10px; margin: 12px 0 18px;}
+    h2{margin:0 0 10px; font-size:26px;}
+    h3{margin:0 0 8px; font-size:19px;}
+    .sub{margin:0 0 16px; color:var(--muted); font-size:16px;}
+    .qTitle{font-size:20px; margin:0 0 14px;}
+    .choices{display:grid; gap:12px; margin: 14px 0 20px;}
     label.choice{
-      display:flex; gap:10px; align-items:flex-start;
-      padding:12px 12px;
+      display:flex; gap:12px; align-items:flex-start;
+      padding:14px 16px;
       border-radius:14px;
       border:1px solid var(--border);
       background: rgba(255,255,255,.02);
       cursor:pointer;
       transition: transform .08s ease, border-color .12s ease, background .12s ease;
+      font-size: 17px;
     }
     label.choice:hover{
       transform: translateY(-1px);
       border-color: rgba(110,168,254,.45);
       background: rgba(110,168,254,.06);
     }
-    input[type="radio"]{margin-top:3px; accent-color: var(--accent);}
-    .hint{font-size:12px; color:var(--muted); margin-top:4px;}
+    input[type="radio"]{margin-top:4px; accent-color: var(--accent); min-width:20px; min-height:20px;}
+    .hint{font-size:15px; color:var(--muted); margin-top:6px;}
     .nav{
-      display:flex; justify-content:space-between; align-items:center; gap:12px;
-      margin-top: 6px;
+      display:flex; justify-content:space-between; align-items:center; gap:14px;
+      margin-top: 10px;
     }
     button{
       border:1px solid var(--border);
       background: rgba(255,255,255,.05);
       color: var(--text);
-      padding: 10px 14px;
+      padding: 12px 18px;
       border-radius: 12px;
       font-weight: 600;
+      font-size: 17px;
       cursor:pointer;
       transition: transform .08s ease, background .12s ease, border-color .12s ease, opacity .12s ease;
     }
@@ -135,39 +138,50 @@
     .resultBox{
       border-radius: 16px;
       border: 1px solid var(--border);
-      padding: 14px;
+      padding: 16px;
       background: rgba(255,255,255,.02);
-      margin-top: 12px;
+      margin-top: 14px;
+      font-size: 17px;
     }
     .badge{
       display:inline-flex; align-items:center; gap:8px;
-      padding:6px 10px;
+      padding:8px 12px;
       border-radius:999px;
       border:1px solid var(--border);
-      font-size:12px;
+      font-size:14px;
       color: var(--muted);
       margin-bottom:10px;
     }
     .badge.ok{border-color: rgba(81,207,102,.45); background: rgba(81,207,102,.10); color: var(--text);}
     .badge.no{border-color: rgba(255,107,107,.45); background: rgba(255,107,107,.10); color: var(--text);}
-    .small{font-size:13px; color:var(--muted);}
-    .ctaRow{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+    .small{font-size:15px; color:var(--muted);}
+    .ctaRow{display:flex; gap:12px; flex-wrap:wrap; margin-top:16px;}
     a.cta, button.cta{
-      display:inline-block;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
       text-decoration:none;
       border:1px solid var(--border);
       background: rgba(255,255,255,.05);
       color: var(--text);
-      padding: 10px 14px;
+      padding: 12px 18px;
       border-radius: 12px;
       font-weight: 700;
+      font-size: 17px;
+      min-height: 48px;
     }
     a.cta:hover, button.cta:hover{
       border-color: rgba(110,168,254,.55);
       background: rgba(110,168,254,.12);
       transform: translateY(-1px);
     }
-    .footerNote{margin-top:18px; font-size:12px; color:var(--muted);}
+    .footerNote{margin-top:18px; font-size:15px; color:var(--muted);}
+    .insight{font-size:15px;color:var(--muted);font-style:italic;margin-top:14px;min-height:1.2em;}
+    .accordion{border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:14px;background:rgba(255,255,255,.02);}
+    .accordion-toggle{padding:14px 16px;cursor:pointer;font-weight:600;font-size:17px;display:flex;justify-content:space-between;align-items:center;}
+    .accordion-toggle:hover{background:rgba(110,168,254,.06);}
+    .accordion-content{padding:0 16px 14px;font-size:16px;color:var(--muted);display:none;}
+    .accordion-content.open{display:block;}
     .progress{
       height: 8px;
       background: rgba(255,255,255,.06);
@@ -185,23 +199,25 @@
       display:flex; justify-content:space-between; align-items:center; gap:10px;
       margin: 10px 0 0;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 15px;
     }
     input[type="text"], input[type="tel"], input[type="email"], textarea{
       width:100%;
-      padding:12px;
+      padding:14px 16px;
       border-radius:12px;
       border:1px solid var(--border);
       background:rgba(255,255,255,.03);
       color:var(--text);
       outline:none;
+      font-size: 17px;
     }
     textarea{resize: vertical;}
-    .err{display:none; color: var(--danger); font-size:12px; margin-top:6px;}
+    .err{display:none; color: var(--danger); font-size:15px; margin-top:8px;}
     @media (max-width: 520px){
-      .card{padding:16px; border-radius:16px;}
-      h2{font-size:20px;}
-      .qTitle{font-size:16px;}
+      body{ font-size: 17px; }
+      .card{padding:18px; border-radius:16px;}
+      h2{font-size:22px;}
+      .qTitle{font-size:18px;}
     }
   
     /* Modal */
@@ -235,7 +251,7 @@
       gap:12px;
       margin-bottom:10px;
     }
-    .modalTop h3{margin:0; font-size:18px;}
+    .modalTop h3{margin:0; font-size:20px;}
     .modalClose{
       border:1px solid var(--border);
       background: transparent;
@@ -256,16 +272,16 @@
       border-radius:16px;
       padding:12px;
     }
-    .scriptCard .k{font-size:12px; color:var(--muted); margin-bottom:6px;}
-    .scriptCard .v{font-size:14px; color:var(--text);}
+    .scriptCard .k{font-size:14px; color:var(--muted); margin-bottom:6px;}
+    .scriptCard .v{font-size:16px; color:var(--text);}
     .miniPill{
       display:inline-flex;
       align-items:center;
       gap:8px;
-      padding:6px 10px;
+      padding:8px 12px;
       border-radius:999px;
       border:1px solid var(--border);
-      font-size:12px;
+      font-size:14px;
       color: var(--muted);
       background: rgba(255,255,255,.03);
     }
@@ -307,14 +323,15 @@
         <h1>Eligibility Check & Electrical Risk Snapshot</h1>
         <p>One question per page • Fast, no technical knowledge required</p>
       </div>
-      <div class="pill" id="statusPill">Step 1 of 4</div>
+      <div class="pill" id="statusPill">Step 0 of 5</div>
     </header>
 
     <div class="card">
       <div class="steps">
-        <div class="stepTag active" id="tag1">Step 1 — Is this right for you?</div>
+        <div class="stepTag active" id="tag0">Step 0 — Value</div>
+        <div class="stepTag" id="tag1">Step 1 — Is this right for you?</div>
         <div class="stepTag" id="tag2">Step 2 — Electrical Risk Snapshot</div>
-        <div class="stepTag" id="tag3">Step 3 — What this means & next step</div>
+        <div class="stepTag" id="tag3">Step 3 — Result & next step</div>
         <div class="stepTag" id="tag4">Step 4 — Contact details</div>
       </div>
 
@@ -373,6 +390,20 @@
       options: ["Yes", "No"]
     }
   ];
+
+  const INSIGHT_GENERIC_EN = "Tip: If you often need someone to \"tell you the answer\", it usually means you're missing verifiable evidence and a prioritised framework.";
+  const INSIGHT_MAP_EN = {
+    elig_q1: { 0: "Many owners start here — the snapshot helps clarify what to do before you buy.", 1: "One property often means every decision matters more; clarity pays off.", 2: "With multiple properties, a consistent framework saves time and reduces risk.", 3: "With multiple properties, a consistent framework saves time and reduces risk." },
+    elig_q2: { 0: "Handling things yourself works best when you have clear evidence to base decisions on.", 1: INSIGHT_GENERIC_EN },
+    elig_q3: { 0: "Having time is useful; the snapshot can still surface where clarity is missing.", 1: INSIGHT_GENERIC_EN },
+    elig_q4: { 0: "Paying for independent advice often reduces costly mistakes later.", 1: "You can still complete the snapshot — it may help you decide if advice is worth it later." },
+    snap_1: { 0: "That \"did I do the right thing?\" feeling often means decisions were made without clear criteria.", 1: "Uncertainty usually points to missing information, not a character flaw.", 2: "Confidence often comes from having a clear framework — the brief can reinforce or extend yours." },
+    snap_2: { 0: "Different opinions are common; the snapshot focuses on your decision process, not who's \"right\".", 1: "Knowing how to choose is half the battle; the brief can document that for future decisions.", 2: "Lack of conflicting advice can still hide uncertainty — the snapshot checks both." },
+    snap_3: { 0: "Past worry is a signal; the snapshot helps turn that into a clearer picture.", 1: "No past worry is useful context; the snapshot still checks current decision clarity." },
+    snap_4: { 0: "Clear understanding is a strength; the brief can help you keep it documented.", 1: "Somewhat clear often means some gaps; the snapshot highlights where they might be.", 2: INSIGHT_GENERIC_EN },
+    snap_5: { 0: INSIGHT_GENERIC_EN, 1: "Being involved when needed works better with a clear priority list — the assessment can provide that." },
+    snap_6: { 0: "Reactive is fine; the snapshot can still show where a bit of planning would reduce stress.", 1: "Planning ahead pairs well with documented evidence — the next step supports that." }
+  };
 
   const SNAPSHOT = [
     {
@@ -452,11 +483,12 @@
   function $(id){ return document.getElementById(id); }
 
   function setActiveStepTag(step){
+    $("tag0").classList.toggle("active", step === 0);
     $("tag1").classList.toggle("active", step === 1);
     $("tag2").classList.toggle("active", step === 2);
     $("tag3").classList.toggle("active", step === 3);
     $("tag4").classList.toggle("active", step === 4 || step === 5);
-    $("statusPill").textContent = `Step ${Math.min(step,4)} of 4`;
+    $("statusPill").textContent = `Step ${step} of 5`;
   }
 
   function computeProgress(){
@@ -616,6 +648,46 @@ ${payload.notes}
   // -----------------------------
   // UI blocks
   // -----------------------------
+  function renderStep0(){
+    setActiveStepTag(0);
+    $("timeText").textContent = "~5 minutes total";
+    const el = document.createElement("div");
+    el.innerHTML = `
+      <h2>Before you spend on electrical work, take 3 minutes to check your “Decision Clarity”</h2>
+      <p class="sub">This snapshot won’t tell you “what is broken”. It helps you answer a more important question: when you need to make an electrical safety decision, are you deciding with clear information or guesswork?</p>
+      <p class="small">This is not a test of electrical knowledge — there are no right or wrong answers. When you finish, you’ll receive a personalised “Electrical Decision Confidence Brief” and clear next-step guidance.</p>
+      <div class="accordion" id="faqAccordion">
+        <div class="accordion-toggle" id="faqToggle">I’d like to learn more <span id="faqChevron">▼</span></div>
+        <div class="accordion-content" id="faqContent">
+          <p><strong>Is this a sales pitch for repairs?</strong> No. This snapshot is decision-focused and does not provide repair quotes.</p>
+          <p><strong>Do I need anything prepared?</strong> No — just answer based on your real situation.</p>
+        </div>
+      </div>
+      <div class="hr"></div>
+      <div class="nav">
+        <span></span>
+        <button class="ghost" id="learnMoreBtn0">Learn more</button>
+        <button class="primary" id="startBtn0">Start</button>
+      </div>
+    `;
+    el.querySelector("#learnMoreBtn0").addEventListener("click", () => {
+      const c = $("faqContent"); const t = $("faqToggle");
+      if (c && t) { c.classList.toggle("open"); t.setAttribute("aria-expanded", c.classList.contains("open")); }
+    });
+    el.querySelector("#startBtn0").addEventListener("click", () => {
+      track('snapshot_start');
+      state.stage = 1;
+      state.index = -1;
+      render();
+    });
+    const toggle = el.querySelector("#faqToggle");
+    if (toggle) toggle.addEventListener("click", () => {
+      const c = el.querySelector("#faqContent");
+      if (c) { c.classList.toggle("open"); toggle.setAttribute("aria-expanded", c.classList.contains("open")); }
+    });
+    return el;
+  }
+
   function renderIntroEligibility(){
     setActiveStepTag(1);
     $("timeText").textContent = "~5 minutes total";
@@ -667,6 +739,7 @@ ${payload.notes}
       <p class="sub">${state.stage === 1 ? "One minute. No technical knowledge required." : "One question per screen. Fast and simple."}</p>
       <p class="qTitle">${escapeHtml(q.title)}</p>
       <div class="choices" role="radiogroup" aria-label="${escapeHtml(q.title)}"></div>
+      <div class="insight" id="insightBox" aria-live="polite"></div>
       <div class="hint">There are no right or wrong answers.</div>
       <div class="nav">
         <button class="ghost" id="backBtn">← Back</button>
@@ -675,6 +748,13 @@ ${payload.notes}
     `;
 
     const choices = container.querySelector(".choices");
+    const insightBox = container.querySelector("#insightBox");
+    const updateInsight = (optIndex) => {
+      const map = INSIGHT_MAP_EN[q.id];
+      const text = (map && map[optIndex] !== undefined) ? map[optIndex] : INSIGHT_GENERIC_EN;
+      if (insightBox) { insightBox.textContent = text ? "\u200B" + text : ""; }
+    };
+
     q.options.forEach((opt, i) => {
       const id = `${q.id}_${i}`;
       const label = document.createElement("label");
@@ -685,13 +765,19 @@ ${payload.notes}
       `;
       label.querySelector("input").addEventListener("change", (e) => {
         state.answers[q.id] = e.target.value;
+        const idx = q.options.indexOf(e.target.value);
+        updateInsight(idx >= 0 ? idx : 0);
         container.querySelector("#nextBtn").disabled = false;
         computeProgress();
       });
       choices.appendChild(label);
     });
 
-    if (selected !== undefined) container.querySelector("#nextBtn").disabled = false;
+    if (selected !== undefined) {
+      container.querySelector("#nextBtn").disabled = false;
+      const idx = q.options.indexOf(selected);
+      updateInsight(idx >= 0 ? idx : 0);
+    }
 
     container.querySelector("#backBtn").addEventListener("click", () => goBack());
     container.querySelector("#nextBtn").addEventListener("click", () => goNext());
@@ -773,7 +859,7 @@ ${payload.notes}
 
     const el = document.createElement("div");
     el.innerHTML = `
-      <h2>Snapshot complete</h2>
+      <h2>Your "Electrical Decision Confidence Brief" is ready</h2>
       <p class="sub">What this means & next step</p>
 
       <div class="resultBox">
@@ -790,36 +876,28 @@ ${payload.notes}
 
       <div class="small">
         <h3>What this means</h3>
-        The snapshot is designed to highlight <em>where uncertainty exists</em> —
-        not to diagnose issues or recommend work.<br/><br/>
-        For some property owners, this level of insight is sufficient.<br/>
-        For others, the next step is to replace uncertainty with
+        The snapshot highlights <em>where uncertainty exists</em> — not to diagnose issues or recommend work.
+        For some owners this is enough; for others, the next step is to replace guesswork with
         <strong>documented, independent professional judgement</strong>.
       </div>
 
       <div class="resultBox" style="margin-top:14px">
-        <h3>Independent Electrical Risk Assessment</h3>
+        <h3>What the next step can provide</h3>
         <div class="small">
-          A comprehensive, on-site assessment providing:
           <ul style="margin:10px 0 0 18px; color: var(--muted);">
-            <li>A clear risk classification</li>
-            <li>Priority-based guidance</li>
-            <li>A 3–5 year electrical budget outlook</li>
-            <li>Independent documentation for future decisions</li>
+            <li>Objective evidence of electrical condition (photos &amp; data)</li>
+            <li>A 1–3 year priority and budget roadmap (planning only)</li>
+            <li>A professional report you can use with tenants, property managers, or insurers</li>
           </ul>
-          <div style="margin-top:10px">
-            This assessment is conducted without providing repair services
-            to ensure complete independence and no conflict of interest.
-          
-          <div style=\"margin-top:10px;\" class=\"small\"><strong>Most clients use this as clarity first — not to approve work immediately.</strong></div>
-</div>
+          <div style="margin-top:10px" class="small"><strong>Most clients use this as clarity first — not to approve work immediately.</strong></div>
         </div>
       </div>
 
       <div class="ctaRow">
-        <a class="cta" href="${LEARN_MORE_URL}">Learn more</a>
-        <button class="cta" id="bookBtn" type="button">Book an independent assessment</button>
+        <button class="cta primary" id="bookBtn" type="button">Book a 15-min call to review your snapshot (free)</button>
+        <button class="cta ghost" id="learnMoreBtn" type="button">Learn more</button>
         <button class="cta" id="callBtn" type="button">Prefer a quick call first?</button>
+        <button class="cta ghost" id="pdfBtn" type="button">Download "Rental Property Electrical Risk Checklist" (PDF)</button>
         <button class="ghost" id="restartBtn">Restart</button>
       </div>
 
@@ -849,10 +927,45 @@ ${payload.notes}
     
 
     const callBtn = el.querySelector("#callBtn");
-    if (callBtn){
-      callBtn.addEventListener("click", () => openCallModal());
-    }
-return el;
+    if (callBtn) callBtn.addEventListener("click", () => openCallModal());
+    const pdfBtn = el.querySelector("#pdfBtn");
+    if (pdfBtn) pdfBtn.addEventListener("click", () => openPdfModal());
+    const learnMoreBtn = el.querySelector("#learnMoreBtn");
+    if (learnMoreBtn) learnMoreBtn.addEventListener("click", () => openLearnMoreModal());
+    return el;
+  }
+
+  function openLearnMoreModal(){
+    const m = $("learnMoreModal");
+    if (!m) return;
+    m.classList.add("open");
+    m.style.display = "flex";
+    document.body.style.overflow = "hidden";
+  }
+  function closeLearnMoreModal(){
+    const m = $("learnMoreModal");
+    if (!m) return;
+    m.classList.remove("open");
+    m.style.display = "none";
+    document.body.style.overflow = "";
+  }
+
+  function openPdfModal(){
+    const m = $("pdfModal");
+    if (!m) return;
+    m.classList.add("open");
+    m.style.display = "flex";
+    document.body.style.overflow = "hidden";
+    const inp = $("pdfEmail");
+    if (inp) { inp.value = (state.lead && state.lead.email) ? state.lead.email : ""; inp.focus(); }
+    $("pdfErr").style.display = "none";
+  }
+  function closePdfModal(){
+    const m = $("pdfModal");
+    if (!m) return;
+    m.classList.remove("open");
+    m.style.display = "none";
+    document.body.style.overflow = "";
   }
 
   function renderLeadForm(){
@@ -1056,8 +1169,9 @@ return el;
   // Navigation Logic
   // -----------------------------
   function goBack(){
+    if (state.stage === 0) return;
     if (state.stage === 1){
-      if (state.index === -1) return;
+      if (state.index === -1){ state.stage = 0; state.index = 0; render(); return; }
       state.index -= 1;
       render();
       return;
@@ -1111,12 +1225,12 @@ return el;
   }
 
   function restart(){
-    state.stage = 1;
-    state.index = -1;
+    state.stage = 0;
+    state.index = 0;
     state.answers = {};
     state.lead = null;
     state.draftMailto = null;
-    state._tracked = {}; // Reset tracking flags on restart
+    state._tracked = {};
     computeProgress();
     render();
   }
@@ -1128,6 +1242,11 @@ return el;
     const app = $("app");
     app.innerHTML = "";
     computeProgress();
+
+    if (state.stage === 0){
+      app.appendChild(renderStep0());
+      return;
+    }
 
     if (state.stage === 1){
       setActiveStepTag(1);
@@ -1205,6 +1324,24 @@ return el;
     if (e.target && e.target.id === "closeCallModal") closeCallModal();
     if (e.target && e.target.id === "closeCallModal2") closeCallModal();
     if (e.target && e.target.id === "callModal") closeCallModal();
+    if (e.target && e.target.id === "closeLearnMoreModal") closeLearnMoreModal();
+    if (e.target && e.target.id === "learnMoreModal") closeLearnMoreModal();
+    if (e.target && e.target.id === "closePdfModal") closePdfModal();
+    if (e.target && e.target.id === "pdfCancelBtn") closePdfModal();
+    if (e.target && e.target.id === "pdfModal") closePdfModal();
+  });
+  document.addEventListener("click", (e) => {
+    if (e.target && e.target.id === "pdfSendBtn") {
+      const inp = $("pdfEmail");
+      const err = $("pdfErr");
+      const email = inp && inp.value ? inp.value.trim() : "";
+      const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      if (!ok) { if (err) err.style.display = "block"; return; }
+      if (err) err.style.display = "none";
+      console.log("PDF request email:", email);
+      closePdfModal();
+      alert("We'll email it shortly.");
+    }
   });
 
   // Quick call form handler (offline-friendly via mailto)
@@ -1366,6 +1503,43 @@ return el;
       <div class="footerNote">
 
         Tip: If you’d rather proceed directly, use <strong>Book an independent assessment</strong> on the previous page.
+      </div>
+    </div>
+  </div>
+
+  <div class="modalOverlay" id="learnMoreModal" role="dialog" aria-modal="true" aria-labelledby="learnMoreModalTitle" style="display:none">
+    <div class="modal">
+      <div class="modalTop">
+        <h3 id="learnMoreModalTitle">What the independent assessment includes</h3>
+        <button class="modalClose" id="closeLearnMoreModal" type="button">Close ✕</button>
+      </div>
+      <div class="resultBox" style="margin-top:0">
+        <p class="small" style="margin:0 0 10px">You can think of the independent assessment as:</p>
+        <ol style="margin:0 0 0 20px; padding:0; color:var(--text); font-size:17px; line-height:1.6;">
+          <li style="margin-bottom:8px"><strong>On-site data collection</strong> (non-destructive)</li>
+          <li style="margin-bottom:8px"><strong>Risk priorities:</strong> what to act on now, what to plan for, what to ignore</li>
+          <li style="margin-bottom:8px"><strong>A 1–5 year budget outlook</strong> (CapEx planning)</li>
+          <li style="margin-bottom:8px"><strong>Independent documentation</strong> you can use with tenants, property managers, or insurers</li>
+        </ol>
+        <p class="small" style="margin-top:14px">If you’d like to know more, we suggest booking a quick call to review your snapshot.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="modalOverlay" id="pdfModal" role="dialog" aria-modal="true" aria-labelledby="pdfModalTitle" style="display:none">
+    <div class="modal">
+      <div class="modalTop">
+        <h3 id="pdfModalTitle">Send to your email</h3>
+        <button class="modalClose" id="closePdfModal" type="button">Close ✕</button>
+      </div>
+      <div style="padding:0 0 14px">
+        <label class="small" for="pdfEmail">Email</label>
+        <input id="pdfEmail" type="email" placeholder="name@email.com" style="margin-top:6px" />
+        <div class="err" id="pdfErr">Please enter a valid email.</div>
+        <div class="ctaRow" style="margin-top:12px">
+          <button class="primary" id="pdfSendBtn" type="button">Send</button>
+          <button class="ghost" id="pdfCancelBtn" type="button">Cancel</button>
+        </div>
       </div>
     </div>
   </div>
