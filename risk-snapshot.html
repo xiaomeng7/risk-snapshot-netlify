@@ -892,7 +892,8 @@ ${payload.notes}
         <button class="cta primary" id="bookBtn" type="button">Book a 15-min call to review your snapshot (free)</button>
         <button class="cta ghost" id="learnMoreBtn" type="button">Learn more</button>
         <button class="cta" id="callBtn" type="button">Prefer a quick call first?</button>
-        <button class="cta ghost" id="pdfBtn" type="button">Download "Rental Property Electrical Risk Checklist" (PDF)</button>
+        <a class="cta ghost" href="investment%20property%20check%20guide.pdf" download target="_blank" rel="noopener">Download PDF now</a>
+        <button class="cta ghost" id="pdfBtn" type="button">Send to my email (with thank-you note)</button>
         <button class="ghost" id="restartBtn">Restart</button>
       </div>
 
@@ -1033,7 +1034,7 @@ ${payload.notes}
       render();
     });
 
-    el.querySelector("#leadForm").addEventListener("submit", (e) => {
+    el.querySelector("#leadForm").addEventListener("submit", async (e) => {
       e.preventDefault();
 
       const name = el.querySelector("#name").value.trim();
@@ -1098,17 +1099,27 @@ ${payload.notes}
 // Store lead locally for the success screen
       state.lead = { name, phone, email };
 
-      // Build a pre-filled email draft (customer clicks Send to confirm)
-      state.draftMailto = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
-
-      // Track lead submission
-      track('lead_submit', { method: 'email_confirm' });
-
-      // Show success screen
-      state.stage = 5;
-      state.index = 0;
-      render();
-});
+      const submitBtn = el.querySelector("#submitBtn");
+      const origText = submitBtn ? submitBtn.textContent : "";
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "Sending…"; }
+      try {
+        const res = await fetch("/.netlify/functions/send-booking", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "lead", lang: "en", name, phone, email, notes, summary }),
+        });
+        const data = await res.json().catch(() => ({}));
+        state.lead = { name, phone, email };
+        track('lead_submit', { method: 'api' });
+        state.stage = 5;
+        state.index = 0;
+        render();
+        if (!res.ok) alert(data.error || "Request could not be sent. Please try again or email us directly.");
+      } catch (err) {
+        alert("Network error. Please try again or email us at " + CONTACT_EMAIL);
+      }
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = origText; }
+    });
 
     return el;
   }
@@ -1125,18 +1136,15 @@ ${payload.notes}
       <p class="sub">Your request has been received.</p>
 
       <div class="resultBox">
-        <span class="badge ok">Almost done</span>
+        <span class="badge ok">Request received</span>
         <div class="small">
-          <strong>Final step:</strong> Click <em>Send email to confirm</em> below.<br/>
-          Your email app will open with a pre-written message — simply press <strong>Send</strong> to complete your request.<br/><br/>
-          This helps us ensure we only respond to genuine enquiries.<br/>
-          This confirmation step helps us focus on property owners who are genuinely considering independent advice.
+          We've received your request for an independent assessment. Our advisor will contact you shortly to confirm suitability and arrange a convenient time.
         </div>
       </div>
 
       <div class="ctaRow">
-        <a class="cta" id="sendEmailBtn" href="#">Send email to confirm →</a>
         <button class="ghost" id="restartBtn">Start again</button>
+        <a class="cta" href="mailto:${CONTACT_EMAIL}">Contact us</a>
       </div>
 
       <div class="small" style="margin-top:10px;">
@@ -1144,16 +1152,10 @@ ${payload.notes}
       </div>
 
       <div class="footerNote">
-        After you send the email, our advisor will contact you shortly to confirm suitability and arrange a convenient time.<br/>
-        If you prefer, you can also email us directly at
+        If you have any questions, email us at
         <a href="mailto:${CONTACT_EMAIL}" style="color:var(--accent);">${CONTACT_EMAIL}</a>.
       </div>
     `;
-
-    const sendBtn = el.querySelector("#sendEmailBtn");
-    if (sendBtn){
-      sendBtn.setAttribute("href", state.draftMailto || `mailto:${CONTACT_EMAIL}`);
-    }
 
     el.querySelector("#restartBtn").addEventListener("click", () => restart());
     return el;
@@ -1325,7 +1327,7 @@ ${payload.notes}
     if (e.target && e.target.id === "pdfCancelBtn") closePdfModal();
     if (e.target && e.target.id === "pdfModal") closePdfModal();
   });
-  document.addEventListener("click", (e) => {
+  document.addEventListener("click", async (e) => {
     if (e.target && e.target.id === "pdfSendBtn") {
       const inp = $("pdfEmail");
       const err = $("pdfErr");
@@ -1333,14 +1335,33 @@ ${payload.notes}
       const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
       if (!ok) { if (err) err.style.display = "block"; return; }
       if (err) err.style.display = "none";
-      console.log("PDF request email:", email);
-      closePdfModal();
-      alert("We'll email it shortly.");
+      const btn = e.target;
+      const origText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "Sending…";
+      try {
+        const res = await fetch("/.netlify/functions/send-pdf", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, lang: "en" }),
+        });
+        const data = await res.json().catch(() => ({}));
+        closePdfModal();
+        if (res.ok && data.ok) {
+          alert("Check your inbox—we've sent the guide to your email. Thanks for completing the snapshot.");
+        } else {
+          alert(data.error || "Something went wrong. You can still download the PDF using the \"Download PDF now\" link.");
+        }
+      } catch (err2) {
+        alert("Network error. You can still download the PDF using the \"Download PDF now\" link.");
+      }
+      btn.disabled = false;
+      btn.textContent = origText;
     }
   });
 
-  // Quick call form handler (offline-friendly via mailto)
-  document.addEventListener("submit", (e) => {
+  // Quick call form: send via API (no mailto)
+  document.addEventListener("submit", async (e) => {
     if (!e.target || e.target.id !== "quickCallForm") return;
     e.preventDefault();
 
@@ -1361,14 +1382,35 @@ ${payload.notes}
     const err = $("qc_err");
     if(err) err.style.display = "none";
 
-    const mailto = buildQuickCallMailto({
-      name, phone, email, suburb,
-      dateReadable: formatDateISOToReadable(date),
-      window: windowSel,
-      notes
-    });
+    const qcSubmit = $("qc_submit");
+    const origText = qcSubmit ? qcSubmit.textContent : "";
+    if (qcSubmit) { qcSubmit.disabled = true; qcSubmit.textContent = "Sending…"; }
 
-    window.location.href = mailto;
+    try {
+      const res = await fetch("/.netlify/functions/send-booking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "quickcall",
+          lang: "en",
+          name, phone, email, suburb,
+          dateReadable: formatDateISOToReadable(date),
+          window: windowSel,
+          notes,
+          summary: buildAnswerSummary(),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      closeCallModal();
+      if (res.ok && data.ok) {
+        alert("Request sent. We'll contact you at your preferred time.");
+      } else {
+        alert(data.error || "Could not send. Please try again or email us at " + CONTACT_EMAIL);
+      }
+    } catch (err2) {
+      alert("Network error. Please try again or email us at " + CONTACT_EMAIL);
+    }
+    if (qcSubmit) { qcSubmit.disabled = false; qcSubmit.textContent = origText; }
   });
 
 
@@ -1528,6 +1570,7 @@ ${payload.notes}
         <button class="modalClose" id="closePdfModal" type="button">Close ✕</button>
       </div>
       <div style="padding:0 0 14px">
+        <p class="small" style="margin:0 0 10px">We’ll email you the checklist and a short thank-you note. Great for saving or sharing.</p>
         <label class="small" for="pdfEmail">Email</label>
         <input id="pdfEmail" type="email" placeholder="name@email.com" style="margin-top:6px" />
         <div class="err" id="pdfErr">Please enter a valid email.</div>

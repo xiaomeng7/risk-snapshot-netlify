@@ -262,7 +262,8 @@
         <button class="btn" id="quickCallBtn">预约 15 分钟，免费解读快照结果</button>
         <button class="btn btn-ghost" id="learnMoreBtn">了解服务内容</button>
         <a class="btn btn-ghost" id="emailBtn" href="#">邮件联系（自动填好内容）</a>
-        <button class="btn btn-ghost" id="pdfBtnZh">下载《投资房电气风险自查指南》(PDF)</button>
+        <a class="btn btn-ghost" href="investment%20property%20check%20guide%20CN.pdf" download target="_blank" rel="noopener">直接下载 PDF</a>
+        <button class="btn btn-ghost" id="pdfBtnZh">发送到邮箱（附感谢说明）</button>
       </div>
 
       <div class="small">
@@ -285,7 +286,7 @@
       </div>
 
       <div class="modal-body">
-        <p class="small">填写后，我们会在你选择的时间段内联系你。你也可以同时点击下方按钮，用邮件把信息发送给我们（邮件内容会自动填好）。</p>
+        <p class="small">填写后点击「提交预约」，我们会收到通知并在你选择的时间段内联系你。</p>
 
         <div class="form">
           <div class="field">
@@ -324,13 +325,12 @@
 
         <div class="divider"></div>
         <div class="success" id="successBox" style="display:none;">
-          已收到！我们的顾问会尽快按你选择的时间联系你。  
-          <div class="small" style="margin-top:6px;">如果你愿意，也可以点击下方按钮把信息通过邮件发给我们（已自动填好）。</div>
+          已收到！我们的顾问会尽快按你选择的时间联系你。
         </div>
       </div>
 
       <div class="modal-footer">
-        <button class="btn" id="emailRequestBtn" type="button">提交预约（打开邮件）</button>
+        <button class="btn" id="emailRequestBtn" type="button">提交预约</button>
         <button class="btn-ghost" id="closeModalBtn2" type="button">取消</button>
       </div>
     </div>
@@ -343,6 +343,7 @@
         <button class="x" id="closePdfModalZh" type="button">关闭</button>
       </div>
       <div class="modal-body">
+        <p class="small" style="margin:0 0 10px">我们会把《投资房电气风险自查指南》和简短感谢说明发到您的邮箱，方便保存或转发。</p>
         <div class="field">
           <label for="pdfEmailZh">邮箱</label>
           <input id="pdfEmailZh" type="email" placeholder="name@email.com" />
@@ -657,35 +658,80 @@
   document.getElementById("closePdfModalZh").addEventListener("click", closePdfModalZh);
   document.getElementById("pdfCancelBtnZh").addEventListener("click", closePdfModalZh);
   document.getElementById("pdfModalZh").addEventListener("click", (e)=>{ if(e.target.id === "pdfModalZh") closePdfModalZh(); });
-  document.getElementById("pdfSendBtnZh").addEventListener("click", ()=>{
+  document.getElementById("pdfSendBtnZh").addEventListener("click", async ()=>{
     const inp = document.getElementById("pdfEmailZh");
     const err = document.getElementById("pdfErrZh");
     const email = inp && inp.value ? inp.value.trim() : "";
     const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     if(!ok){ if(err) err.style.display = "block"; err.textContent = "请输入有效邮箱"; return; }
     if(err) err.style.display = "none";
-    console.log("PDF request email:", email);
-    closePdfModalZh();
-    alert("已发送，请查收邮箱。");
+    const btn = document.getElementById("pdfSendBtnZh");
+    const origText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "发送中…";
+    try {
+      const res = await fetch("/.netlify/functions/send-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, lang: "zh" }),
+      });
+      const data = await res.json().catch(() => ({}));
+      closePdfModalZh();
+      if(res.ok && data.ok){
+        alert("已发送到您的邮箱，请查收。感谢您完成快照。");
+      } else {
+        alert(data.error || "发送失败，您仍可点击「直接下载 PDF」获取指南。");
+      }
+    } catch (e) {
+      alert("网络异常，您仍可点击「直接下载 PDF」获取指南。");
+    }
+    btn.disabled = false;
+    btn.textContent = origText;
   });
 
-  // ---------- Submit quick call (opens email client) ----------
-  document.getElementById("emailRequestBtn").addEventListener("click", ()=>{
+  // ---------- Submit quick call (send via API, no mailto) ----------
+  document.getElementById("emailRequestBtn").addEventListener("click", async ()=>{
     const name = document.getElementById("name")?.value || "";
     const phone = document.getElementById("phone")?.value || "";
     const email = document.getElementById("email")?.value || "";
+    const address = document.getElementById("address")?.value || "";
+    const slot = document.getElementById("slot")?.value || "";
+    const note = document.getElementById("note")?.value || "";
     
     if(!name || !phone || !email){
       alert("请先填写姓名、电话和邮箱。");
       return;
     }
     
-    // Update mailto link with form data, then open email client
-    updateMailto(true);
-    const mailtoLink = document.getElementById("emailRequestBtn").getAttribute("href");
-    if(mailtoLink && mailtoLink !== "#"){
-      window.location.href = mailtoLink;
+    const btn = document.getElementById("emailRequestBtn");
+    const origText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "提交中…";
+    try {
+      const res = await fetch("/.netlify/functions/send-booking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "quickcall",
+          lang: "zh",
+          name, phone, email, address, slot, note,
+          summary: buildAnswerSummaryZh(),
+          utm: utm || "",
+          page: window.location.href,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if(res.ok && data.ok){
+        document.getElementById("successBox").style.display = "block";
+        btn.style.display = "none";
+      } else {
+        alert(data.error || "提交失败，请稍后重试或直接致电/邮件联系我们。");
+      }
+    } catch (e) {
+      alert("网络异常，请稍后重试或直接联系我们。");
     }
+    btn.disabled = false;
+    btn.textContent = origText;
   });
   
   // Close modal button in footer
