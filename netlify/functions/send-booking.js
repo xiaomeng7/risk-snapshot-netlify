@@ -65,8 +65,9 @@ exports.handler = async (event) => {
   }
 
   let text, subject;
+  const subPrefix = lang === 'zh' ? '[电路风险快照] ' : '[Risk Snapshot] ';
   if (type === 'lead') {
-    subject = 'Request for Independent Electrical Risk Assessment';
+    subject = subPrefix + 'Request for Independent Electrical Risk Assessment';
     text = buildLeadEmailEn({
       name,
       phone,
@@ -75,7 +76,7 @@ exports.handler = async (event) => {
       summary: body.summary || '',
     });
   } else if (lang === 'zh') {
-    subject = '预约 15 分钟免费解读快照结果';
+    subject = subPrefix + '预约 15 分钟免费解读快照结果';
     text = buildQuickCallEmailZh({
       name,
       phone,
@@ -88,7 +89,7 @@ exports.handler = async (event) => {
       page: body.page || '',
     });
   } else {
-    subject = 'Request a quick suitability call';
+    subject = subPrefix + 'Request a quick suitability call';
     text = buildQuickCallEmailEn({
       name,
       phone,
@@ -101,11 +102,14 @@ exports.handler = async (event) => {
     });
   }
 
+  // 发件人显示为「快照客户」，收件人一眼能看出是 Snapshot 预约/询盘；实际发信仍用已验证域名
+  const fromDisplay = (lang === 'zh' ? '电路风险快照 - ' : 'Risk Snapshot - ') + name;
   const resend = new Resend(RESEND_API_KEY);
   try {
     const result = await resend.emails.send({
-      from: FROM_NAME + ' <' + FROM_EMAIL + '>',
+      from: fromDisplay + ' <' + FROM_EMAIL + '>',
       to: TO_EMAIL,
+      replyTo: email,
       subject: subject,
       text: text,
     });

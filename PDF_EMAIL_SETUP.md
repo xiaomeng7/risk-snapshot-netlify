@@ -14,7 +14,15 @@
    - 权限选 **Sending access**（只发信即可）。
    - 点 **Add**，**复制显示的 Key**（形如 `re_123abc...`，只显示一次，务必保存）。
 
-（可选）在 Resend 里添加并验证你的域名，之后发件人可用 `noreply@你的域名.com`；不验证则用 Resend 默认发件地址。
+## 1.1 必须验证域名才能发信给任意收件人
+
+**若出现 403：`You can only send testing emails to your own email address`**
+
+- Resend 未验证域名时，**只能发到你的 Resend 账号邮箱**（如 meng.z@bhtechnology.com.au），不能发到用户填写的邮箱或 info@…。
+- 要发信给任意收件人（用户邮箱、公司 info@），必须：
+  1. 在 Resend 中 **验证发信域名**：打开 [resend.com/domains](https://resend.com/domains)，添加并验证你的域名（如 `bhtechnology.com.au`），按页面提示添加 DNS 记录。
+  2. 验证通过后，在 Netlify 环境变量中设置 **`PDF_FROM_EMAIL`** 为**该域名下的邮箱**（如 `noreply@bhtechnology.com.au`），不要用默认的 `onboarding@resend.dev`。
+- 发件人改为已验证域名的邮箱后，即可向任意收件人发送 PDF 和预约通知。
 
 ## 2. 在 Netlify 里设置 RESEND_API_KEY
 
@@ -29,7 +37,7 @@
 | 变量名 | 说明 | 必填 |
 |--------|------|------|
 | `RESEND_API_KEY` | Resend API Key（如 `re_xxxx`） | **是** |
-| `PDF_FROM_EMAIL` | 发件邮箱（默认 `onboarding@resend.dev`） | 否 |
+| `PDF_FROM_EMAIL` | 发件邮箱；**发信给任意收件人时必须用已验证域名的邮箱**（如 `noreply@bhtechnology.com.au`），否则只能用 Resend 账号邮箱收信 | 发任意收件人时**必填** |
 | `PDF_FROM_NAME` | 发件人名称（默认 Better Home Technology） | 否 |
 | `BOOKING_TO_EMAIL` | 预约邮件收件地址（默认 info@bhtechnology.com.au） | 否 |
 
