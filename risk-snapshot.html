@@ -892,7 +892,7 @@ ${payload.notes}
         <button class="cta primary" id="bookBtn" type="button">Book a free 15-min call to review your snapshot</button>
         <button class="cta ghost" id="learnMoreBtn" type="button">Learn more</button>
         <button class="cta ghost" id="leadFormBtn" type="button">Request full assessment (no call)</button>
-        <a class="cta ghost" href="investment%20property%20check%20guide.pdf" download target="_blank" rel="noopener">Download: Investment Property Electrical Risk Check Guide (PDF)</a>
+        <a class="cta ghost" id="pdfDownloadLinkEn" href="investment%20property%20check%20guide.pdf" download target="_blank" rel="noopener" style="display:none">Download: Investment Property Electrical Risk Check Guide (PDF)</a>
         <button class="cta ghost" id="pdfBtn" type="button">Send check guide to my email (with thank-you note)</button>
         <button class="ghost" id="restartBtn">Restart</button>
       </div>
@@ -1347,10 +1347,12 @@ ${payload.notes}
         if (res.ok && data.ok) {
           alert("Check your inbox—we've sent the guide to your email. Thanks for completing the snapshot.");
         } else {
-          alert(data.error || "Something went wrong. You can still use the \"Download: Investment Property Electrical Risk Check Guide (PDF)\" link.");
+          var link = document.getElementById("pdfDownloadLinkEn"); if (link) link.style.display = "inline-flex";
+          alert(data.error || "Something went wrong. You can use the download link below to get the guide.");
         }
       } catch (err2) {
-        alert("Network error. You can still use the \"Download: Investment Property Electrical Risk Check Guide (PDF)\" link.");
+        var link = document.getElementById("pdfDownloadLinkEn"); if (link) link.style.display = "inline-flex";
+        alert("Network error. You can use the download link below to get the guide.");
       }
       btn.disabled = false;
       btn.textContent = origText;

@@ -259,10 +259,10 @@
       </ul>
 
       <div class="btns">
-        <button class="btn" id="quickCallBtn">预约 15 分钟，免费解读快照结果</button>
+        <button class="btn" id="quickCallBtn">预约 15 分钟电话联系，免费解读快照结果</button>
         <button class="btn btn-ghost" id="learnMoreBtn">了解服务内容</button>
         <a class="btn btn-ghost" id="emailBtn" href="#">邮件联系（自动填好内容）</a>
-        <a class="btn btn-ghost" href="investment%20property%20check%20guide%20CN.pdf" download target="_blank" rel="noopener">直接下载《投资房电气风险自查指南》(PDF)</a>
+        <a class="btn btn-ghost" id="pdfDownloadLinkZh" href="investment%20property%20check%20guide%20CN.pdf" download target="_blank" rel="noopener" style="display:none">直接下载《投资房电气风险自查指南》(PDF)</a>
         <button class="btn btn-ghost" id="pdfBtnZh">发送《投资房电气风险自查指南》到邮箱（附感谢说明）</button>
       </div>
 
@@ -273,7 +273,7 @@
 
       <div class="divider"></div>
 
-      <div class="small mono" id="debugLine"></div>
+      <div class="small mono" id="debugLine" style="display:none" aria-hidden="true"></div>
     </section>
   </div>
 
@@ -614,7 +614,8 @@
       hint.textContent = "当决策在压力下发生时（例如租客投诉、跳闸、紧急维修），最容易出现过度支出或责任风险。独立评估的目的，是在问题升级前给你一个可依据的判断和规划路径。";
     }
 
-    debug.textContent = `（内部记录）score=${s} | utm=${utm || "none"}`;
+    // 内部记录不向用户展示
+    // debug.textContent = `（内部记录）score=${s} | utm=${utm || "none"}`;
 
     // Update mailto link with prefilled content
     updateMailto();
@@ -680,10 +681,12 @@
       if(res.ok && data.ok){
         alert("已发送到您的邮箱，请查收。感谢您完成快照。");
       } else {
-        alert(data.error || "发送失败，您仍可点击「直接下载《投资房电气风险自查指南》」获取。");
+        var link = document.getElementById("pdfDownloadLinkZh"); if(link) link.style.display = "inline-flex";
+        alert(data.error || "发送失败，请使用下方「直接下载」链接获取。");
       }
     } catch (e) {
-      alert("网络异常，您仍可点击「直接下载《投资房电气风险自查指南》」获取。");
+      var link = document.getElementById("pdfDownloadLinkZh"); if(link) link.style.display = "inline-flex";
+      alert("网络异常，请使用下方「直接下载」链接获取。");
     }
     btn.disabled = false;
     btn.textContent = origText;
