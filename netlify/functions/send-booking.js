@@ -6,56 +6,13 @@ const FROM_EMAIL = process.env.PDF_FROM_EMAIL || 'onboarding@resend.dev';
 const FROM_NAME = process.env.PDF_FROM_NAME || 'Better Home Technology';
 
 function buildLeadEmailEn(payload) {
-  const { name, phone, email, notes, summary } = payload;
-  return `Hello,
-
-I've just completed the Electrical Risk Snapshot on your website and would like to request an independent electrical assessment.
-
-My details are below:
-
-Name: ${name}
-Phone: ${phone}
-Email: ${email}
-
-Property type:
-• Investment property
-
-Reason for enquiry:
-• I would like clearer visibility and independent advice before making future electrical decisions.
-
-${notes ? `Additional notes:\n• ${notes}\n\n` : ''}Snapshot summary (for reference):
-${summary || '(none)'}
-
-Please let me know the next steps.
-
-Kind regards,
-${name}
-`;
+  const name = payload.name, phone = payload.phone, email = payload.email, notes = payload.notes, summary = payload.summary || '(none)';
+  return 'Hello,\n\nI\'ve just completed the Electrical Risk Snapshot on your website and would like to request an independent electrical assessment.\n\nMy details are below:\n\nName: ' + name + '\nPhone: ' + phone + '\nEmail: ' + email + '\n\nProperty type:\n• Investment property\n\nReason for enquiry:\n• I would like clearer visibility and independent advice before making future electrical decisions.\n\n' + (notes ? 'Additional notes:\n• ' + notes + '\n\n' : '') + 'Snapshot summary (for reference):\n' + summary + '\n\nPlease let me know the next steps.\n\nKind regards,\n' + name + '\n';
 }
 
 function buildQuickCallEmailEn(payload) {
-  const { name, phone, email, suburb, dateReadable, window, notes, summary } = payload;
-  return `Hello,
-
-I've just completed the Electrical Risk Snapshot and would like to request a quick suitability call.
-
-My details are below:
-
-Name: ${name}
-Phone: ${phone}
-Email: ${email}
-${suburb ? `Property area: ${suburb}\n` : ''}
-
-Preferred call time (Adelaide):
-Date: ${dateReadable || '(not set)'}
-Window: ${window || '(not set)'}
-
-${notes ? `Notes:\n${notes}\n\n` : ''}Snapshot summary (for reference):
-${summary || '(none)'}
-
-Kind regards,
-${name}
-`;
+  const name = payload.name, phone = payload.phone, email = payload.email, suburb = payload.suburb, dateReadable = payload.dateReadable || '(not set)', window = payload.window || '(not set)', notes = payload.notes, summary = payload.summary || '(none)';
+  return 'Hello,\n\nI\'ve just completed the Electrical Risk Snapshot and would like to request a quick suitability call.\n\nMy details are below:\n\nName: ' + name + '\nPhone: ' + phone + '\nEmail: ' + email + '\n' + (suburb ? 'Property area: ' + suburb + '\n' : '') + '\nPreferred call time (Adelaide):\nDate: ' + dateReadable + '\nWindow: ' + window + '\n\n' + (notes ? 'Notes:\n' + notes + '\n\n' : '') + 'Snapshot summary (for reference):\n' + summary + '\n\nKind regards,\n' + name + '\n';
 }
 
 function buildQuickCallEmailZh(payload) {
@@ -63,17 +20,17 @@ function buildQuickCallEmailZh(payload) {
   let body = '您好，BH Technology 团队：\n\n';
   body += '我刚完成【电路风险快照】，希望预约 15 分钟免费解读快照结果。\n\n';
   body += '【联系方式】\n';
-  body += `姓名：${name || ''}\n`;
-  body += `电话：${phone || ''}\n`;
-  body += `邮箱：${email || ''}\n`;
-  if (address) body += `地址：${address}\n`;
-  if (slot) body += `期望通话时间：${slot}\n`;
-  if (note) body += `备注：${note}\n`;
+  body += '姓名：' + (name || '') + '\n';
+  body += '电话：' + (phone || '') + '\n';
+  body += '邮箱：' + (email || '') + '\n';
+  if (address) body += '地址：' + address + '\n';
+  if (slot) body += '期望通话时间：' + slot + '\n';
+  if (note) body += '备注：' + note + '\n';
   body += '\n【快照选择结果】\n';
   body += summary || '(无)';
   body += '\n\n【我的来源】\n';
-  body += `utm：${utm || '未标记'}\n`;
-  body += `页面：${page || ''}\n\n谢谢！\n';
+  body += 'utm：' + (utm || '未标记') + '\n';
+  body += '页面：' + (page || '') + '\n\n谢谢！\n';
   return body;
 }
 
@@ -146,17 +103,19 @@ exports.handler = async (event) => {
 
   const resend = new Resend(RESEND_API_KEY);
   try {
-    const { data, error } = await resend.emails.send({
-      from: `${FROM_NAME} <${FROM_EMAIL}>`,
+    const result = await resend.emails.send({
+      from: FROM_NAME + ' <' + FROM_EMAIL + '>',
       to: TO_EMAIL,
-      subject,
-      text,
+      subject: subject,
+      text: text,
     });
+    const data = result.data;
+    const error = result.error;
     if (error) {
       console.error('Resend error:', error);
       return { statusCode: 502, body: JSON.stringify({ error: error.message || 'Failed to send' }) };
     }
-    return { statusCode: 200, body: JSON.stringify({ ok: true, id: data?.id }) };
+    return { statusCode: 200, body: JSON.stringify({ ok: true, id: data && data.id }) };
   } catch (err) {
     console.error(err);
     return { statusCode: 500, body: JSON.stringify({ error: err.message || 'Server error' }) };
