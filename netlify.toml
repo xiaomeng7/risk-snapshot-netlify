@@ -4,6 +4,10 @@
   # 这是一个静态网站，不需要构建步骤
   publish = "."
 
+# 安装 netlify/functions 下的依赖（如 resend），否则 Function 打包会报错
+[[plugins]]
+  package = "@netlify/plugin-functions-install-core"
+
 # 首页为语言选择页（index.html）；中英文用下面短链接也可访问
 [[redirects]]
   from = "/en"
