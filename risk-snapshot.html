@@ -889,11 +889,11 @@ ${payload.notes}
       </div>
 
       <div class="ctaRow">
-        <button class="cta primary" id="bookBtn" type="button">Book a 15-min call to review your snapshot (free)</button>
+        <button class="cta primary" id="bookBtn" type="button">Book a free 15-min call to review your snapshot</button>
         <button class="cta ghost" id="learnMoreBtn" type="button">Learn more</button>
-        <button class="cta" id="callBtn" type="button">Prefer a quick call first?</button>
-        <a class="cta ghost" href="investment%20property%20check%20guide.pdf" download target="_blank" rel="noopener">Download PDF now</a>
-        <button class="cta ghost" id="pdfBtn" type="button">Send to my email (with thank-you note)</button>
+        <button class="cta ghost" id="leadFormBtn" type="button">Request full assessment (no call)</button>
+        <a class="cta ghost" href="investment%20property%20check%20guide.pdf" download target="_blank" rel="noopener">Download: Investment Property Electrical Risk Check Guide (PDF)</a>
+        <button class="cta ghost" id="pdfBtn" type="button">Send check guide to my email (with thank-you note)</button>
         <button class="ghost" id="restartBtn">Restart</button>
       </div>
 
@@ -908,8 +908,9 @@ ${payload.notes}
     `;
 
     el.querySelector("#restartBtn").addEventListener("click", () => restart());
-    el.querySelector("#bookBtn").addEventListener("click", () => {
-      // Track lead form view (only once, avoid duplicate events on re-render)
+    el.querySelector("#bookBtn").addEventListener("click", () => openCallModal());
+    const leadFormBtn = el.querySelector("#leadFormBtn");
+    if (leadFormBtn) leadFormBtn.addEventListener("click", () => {
       const trackKey = 'lead_form_view';
       if (!state._tracked[trackKey]) {
         track('lead_form_view');
@@ -919,11 +920,6 @@ ${payload.notes}
       state.index = 0;
       render();
     });
-
-    
-
-    const callBtn = el.querySelector("#callBtn");
-    if (callBtn) callBtn.addEventListener("click", () => openCallModal());
     const pdfBtn = el.querySelector("#pdfBtn");
     if (pdfBtn) pdfBtn.addEventListener("click", () => openPdfModal());
     const learnMoreBtn = el.querySelector("#learnMoreBtn");
@@ -973,8 +969,9 @@ ${payload.notes}
       <h2>Book an independent assessment</h2>
       <p class="sub">Leave your details and our advisor will contact you shortly.</p>
 
+
       <div class="small" style="margin-top:-6px; margin-bottom:10px;">
-        Prefer not to book yet? You can choose <strong>“Prefer a quick call first?”</strong> on the previous page.
+        Prefer a short call first? Go back and click <strong>Book a free 15-min call</strong> on the previous page.
       </div>
 
       <div class="resultBox">
@@ -1350,10 +1347,10 @@ ${payload.notes}
         if (res.ok && data.ok) {
           alert("Check your inbox—we've sent the guide to your email. Thanks for completing the snapshot.");
         } else {
-          alert(data.error || "Something went wrong. You can still download the PDF using the \"Download PDF now\" link.");
+          alert(data.error || "Something went wrong. You can still use the \"Download: Investment Property Electrical Risk Check Guide (PDF)\" link.");
         }
       } catch (err2) {
-        alert("Network error. You can still download the PDF using the \"Download PDF now\" link.");
+        alert("Network error. You can still use the \"Download: Investment Property Electrical Risk Check Guide (PDF)\" link.");
       }
       btn.disabled = false;
       btn.textContent = origText;
@@ -1433,9 +1430,9 @@ ${payload.notes}
     <div class="modal">
       <div class="modalTop">
         <div>
-          <h3 id="callModalTitle">Prefer a quick call first?</h3>
+          <h3 id="callModalTitle">Book a free 15-min call to review your snapshot</h3>
           <div class="small" style="margin-top:4px;">
-            If you’d like, we can do a short <strong>8–10 minute</strong> suitability call before any booking.
+            We'll do a short <strong>8–10 minute</strong> call to discuss your results and whether an independent assessment makes sense for you.
           </div>
         </div>
         <button class="modalClose" id="closeCallModal" type="button">Close ✕</button>
@@ -1526,20 +1523,19 @@ ${payload.notes}
           <div class="err" id="qc_err">Please complete all required fields with a valid email.</div>
 
           <div class="ctaRow" style="margin-top:6px;">
-            <button class="cta" id="qc_submit" type="submit">Open email request →</button>
+            <button class="cta" id="qc_submit" type="submit">Request call →</button>
             <button class="ghost" id="closeCallModal2" type="button">Not now</button>
           </div>
 
           <div class="small" style="margin-top:-4px;">
-            We’ll draft an email to <strong>info@bhtechnology.com.au</strong> with your details and preferred time.
-            Please click <strong>Send</strong> in your email app to confirm.
+            We'll send your details and preferred time to our team. We'll call you in your chosen window.
           </div>
         </div>
       </form>
 
       <div class="footerNote">
 
-        Tip: If you’d rather proceed directly, use <strong>Book an independent assessment</strong> on the previous page.
+        Tip: To request a full assessment without a call, use <strong>Request full assessment (no call)</strong> on the previous page.
       </div>
     </div>
   </div>
@@ -1570,7 +1566,7 @@ ${payload.notes}
         <button class="modalClose" id="closePdfModal" type="button">Close ✕</button>
       </div>
       <div style="padding:0 0 14px">
-        <p class="small" style="margin:0 0 10px">We’ll email you the checklist and a short thank-you note. Great for saving or sharing.</p>
+        <p class="small" style="margin:0 0 10px">We’ll email you the check guide and a short thank-you note. Great for saving or sharing.</p>
         <label class="small" for="pdfEmail">Email</label>
         <input id="pdfEmail" type="email" placeholder="name@email.com" style="margin-top:6px" />
         <div class="err" id="pdfErr">Please enter a valid email.</div>
