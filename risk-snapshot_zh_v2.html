@@ -326,9 +326,6 @@
         <div class="divider"></div>
         <div class="success" id="successBox" style="display:none;">
           已收到！我们的顾问会尽快按你选择的时间联系你。
-          <div id="servicem8LinkWrap" style="margin-top:10px;display:none;">
-            <a class="btn btn-ghost small" id="createServiceM8BtnZh" href="#" target="_blank" rel="noopener">创建 ServiceM8 工单</a>
-          </div>
         </div>
       </div>
 
@@ -730,14 +727,6 @@
       if(res.ok && data.ok){
         document.getElementById("successBox").style.display = "block";
         btn.style.display = "none";
-        if (data.servicem8 && data.servicem8.lead_id && data.servicem8.timestamp && data.servicem8.sig) {
-          const wrap = document.getElementById("servicem8LinkWrap");
-          const link = document.getElementById("createServiceM8BtnZh");
-          if (wrap && link) {
-            link.href = "/.netlify/functions/createServiceM8Job?lead_id=" + encodeURIComponent(data.servicem8.lead_id) + "&timestamp=" + encodeURIComponent(data.servicem8.timestamp) + "&sig=" + encodeURIComponent(data.servicem8.sig);
-            wrap.style.display = "block";
-          }
-        }
       } else {
         alert(data.error || "提交失败，请稍后重试或直接致电/邮件联系我们。");
       }

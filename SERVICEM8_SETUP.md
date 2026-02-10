@@ -15,7 +15,7 @@
 | `SERVICEM8_COMPANY_CONTACT_TYPE` | Company Contact 分类，默认 `Job Contact`（也可 `Billing Contact` / `Property Manager`） | 可选 |
 | `SERVICEM8_JOB_CONTACT_TYPE` | Job Contact 分类，默认 `Job Contact`（也可 `Billing Contact` / `Property Manager`） | 可选 |
 | `SNAPSHOT_SIGNING_SECRET` | 用于对 lead_id + timestamp 做 HMAC 签名的密钥；与生成「Create ServiceM8 Job」链接的 send-booking 共用 | **是**（若要用该链接） |
-| `SITE_URL` | 站点根 URL（如 `https://yoursite.netlify.app`），用于在**邮件正文**里生成「Create ServiceM8 Job」可点击链接；不设则邮件里不会出现该链接（仅成功页仍有按钮） | 若要在邮件里看到链接则**必填** |
+| `SITE_URL` | 站点根 URL（如 `https://yoursite.netlify.app`），用于在**邮件正文**里生成「Create ServiceM8 Job」可点击链接 | 若要在邮件里看到链接则**必填** |
 
 - 密钥只放在环境变量中，不要写进代码或仓库。
 - `SNAPSHOT_SIGNING_SECRET` 需与 `send-booking` 中生成签名时使用的值一致（同一次部署内由 Netlify 注入）。
@@ -24,9 +24,9 @@
 
 1. 用户完成快照并提交（lead 表单或 quickcall）。
 2. `send-booking` 发邮件并在响应中返回 `servicem8: { lead_id, timestamp, sig }`（需配置 `SNAPSHOT_SIGNING_SECRET`）。
-3. 成功页/弹窗显示「Create ServiceM8 Job」/「创建 ServiceM8 工单」，链接到  
+3. `send-booking` 在邮件正文中生成「Create ServiceM8 Job」可点击链接：  
    `/.netlify/functions/createServiceM8Job?lead_id=...&timestamp=...&sig=...`
-4. 点击后 `createServiceM8Job`：校验签名 → 按 email/phone 查找或创建 Company → 创建 Job（job_address、job_description 含来源与快照摘要）。
+4. 收件人从邮件点击后 `createServiceM8Job`：校验签名 → 按 email/phone 查找或创建 Company → 创建 Job 与 Note。
 
 ## 3. 本地测试脚本
 
