@@ -30,6 +30,9 @@ const SERVICEM8_BASE_URL = process.env.SERVICEM8_BASE_URL || "https://api.servic
 const SNAPSHOT_SIGNING_SECRET = process.env.SNAPSHOT_SIGNING_SECRET;
 const JOB_STATUS = process.env.SERVICEM8_JOB_STATUS || "Quote";
 const JOB_DESCRIPTION = process.env.SERVICEM8_JOB_DESCRIPTION || "Whole house electric health check";
+// ServiceM8 contact type values usually: "Job Contact" / "Billing Contact" / "Property Manager"
+const COMPANY_CONTACT_TYPE = process.env.SERVICEM8_COMPANY_CONTACT_TYPE || "Job Contact";
+const JOB_CONTACT_TYPE = process.env.SERVICEM8_JOB_CONTACT_TYPE || "Job Contact";
 
 const DOC_LINK = "https://developer.servicem8.com/llms.txt";
 
@@ -285,7 +288,7 @@ async function upsertCompanyContact(
     email: (payload.email || "").trim(),
     phone: (payload.phone || "").trim(),
     mobile: (payload.phone || "").trim(),
-    type: "JOB",
+    type: COMPANY_CONTACT_TYPE,
     is_primary_contact: "1",
   };
 
@@ -414,7 +417,7 @@ async function createJobContactOptional(
       body.phone = (payload.phone || "").trim();
       body.mobile = (payload.phone || "").trim();
     }
-    body.type = "JOB";
+    body.type = JOB_CONTACT_TYPE;
     const res = await servicem8Fetch("jobcontact.json", { method: "POST", body: JSON.stringify(body) });
     if (res.ok) {
       const uuid = res.headers.get("x-record-uuid");
