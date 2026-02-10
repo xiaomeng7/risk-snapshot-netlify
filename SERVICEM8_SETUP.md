@@ -11,6 +11,7 @@
 | `SERVICEM8_API_KEY` | ServiceM8 Private Application API Key（发请求时放在 `X-API-Key` header） | 创建工单时**是** |
 | `SERVICEM8_BASE_URL` | API 根地址，默认 `https://api.servicem8.com/api_1.0` | 否 |
 | `SNAPSHOT_SIGNING_SECRET` | 用于对 lead_id + timestamp 做 HMAC 签名的密钥；与生成「Create ServiceM8 Job」链接的 send-booking 共用 | **是**（若要用该链接） |
+| `SITE_URL` | 站点根 URL（如 `https://yoursite.netlify.app`），用于在**邮件正文**里生成「Create ServiceM8 Job」可点击链接；不设则邮件里不会出现该链接（仅成功页仍有按钮） | 若要在邮件里看到链接则**必填** |
 
 - 密钥只放在环境变量中，不要写进代码或仓库。
 - `SNAPSHOT_SIGNING_SECRET` 需与 `send-booking` 中生成签名时使用的值一致（同一次部署内由 Netlify 注入）。

@@ -3,6 +3,7 @@ const crypto = require('crypto');
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const SNAPSHOT_SIGNING_SECRET = process.env.SNAPSHOT_SIGNING_SECRET;
+const SITE_URL = process.env.SITE_URL || ''; // 用于邮件里的「Create ServiceM8 Job」链接，如 https://yoursite.netlify.app
 const TO_EMAIL = process.env.BOOKING_TO_EMAIL || 'info@bhtechnology.com.au';
 const FROM_EMAIL = process.env.PDF_FROM_EMAIL || 'onboarding@resend.dev';
 const FROM_NAME = process.env.PDF_FROM_NAME || 'Better Home Technology';
@@ -104,6 +105,34 @@ exports.handler = async (event) => {
     });
   }
 
+  // 生成 ServiceM8 签名链接（用于邮件正文 + 返回给前端）
+  let servicem8 = null;
+  if (SNAPSHOT_SIGNING_SECRET) {
+    const address = type === 'lead' ? (body.address || '') : (body.address || body.suburb || '');
+    const payload = {
+      name,
+      email,
+      phone,
+      address: (address || '').trim(),
+      summary: (body.summary || '').trim(),
+      notes: (type === 'lead' ? (body.notes || '') : (body.note || body.notes || '')).trim(),
+      submitted_at: Date.now(),
+    };
+    const leadId = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
+    const timestamp = String(Date.now());
+    const sig = crypto.createHmac('sha256', SNAPSHOT_SIGNING_SECRET).update(leadId + timestamp).digest('hex');
+    servicem8 = { lead_id: leadId, timestamp, sig };
+    // 在邮件正文末尾加上「Create ServiceM8 Job」链接，方便收件人在邮件里点击
+    if (SITE_URL) {
+      const base = SITE_URL.replace(/\/$/, '');
+      const link = base + '/.netlify/functions/createServiceM8Job?lead_id=' + encodeURIComponent(leadId) + '&timestamp=' + encodeURIComponent(timestamp) + '&sig=' + encodeURIComponent(sig);
+      const linkLine = lang === 'zh'
+        ? '\n\n---\n创建 ServiceM8 工单（点击下方链接）：\n' + link
+        : '\n\n---\nCreate ServiceM8 Job (click link below):\n' + link;
+      text = text + linkLine;
+    }
+  }
+
   // 发件人显示为「快照客户」，收件人一眼能看出是 Snapshot 预约/询盘；实际发信仍用已验证域名
   const fromDisplay = (lang === 'zh' ? '电路风险快照 - ' : 'Risk Snapshot - ') + name;
   const resend = new Resend(RESEND_API_KEY);
@@ -120,25 +149,6 @@ exports.handler = async (event) => {
     if (error) {
       console.error('Resend error:', error);
       return { statusCode: 502, body: JSON.stringify({ error: error.message || 'Failed to send' }) };
-    }
-
-    // Optional: return signed token for "Create ServiceM8 Job" link (lead + quickcall)
-    let servicem8 = null;
-    if (SNAPSHOT_SIGNING_SECRET) {
-      const address = type === 'lead' ? (body.address || '') : (body.address || body.suburb || '');
-      const payload = {
-        name,
-        email,
-        phone,
-        address: (address || '').trim(),
-        summary: (body.summary || '').trim(),
-        notes: (type === 'lead' ? (body.notes || '') : (body.note || body.notes || '')).trim(),
-        submitted_at: Date.now(),
-      };
-      const leadId = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
-      const timestamp = String(Date.now());
-      const sig = crypto.createHmac('sha256', SNAPSHOT_SIGNING_SECRET).update(leadId + timestamp).digest('hex');
-      servicem8 = { lead_id: leadId, timestamp, sig };
     }
 
     const response = { ok: true, id: data && data.id };
