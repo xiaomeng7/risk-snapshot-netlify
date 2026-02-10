@@ -1,16 +1,16 @@
 /**
  * Netlify Function: Create ServiceM8 Job from Snapshot submission.
  *
- * Input: GET ?lead_id=...&timestamp=...&sig=... or POST body with same, or signed payload in body.
- * Validates HMAC signature (SNAPSHOT_SIGNING_SECRET), loads submission data, finds/creates Company,
- * creates/upserts Company Contact, creates Job. Returns JSON + HTML.
+ * Flow: validate request → upsertClient (Company) → upsertCompanyContact → create Job
+ *       → create Note (ServiceM8 Note resource) → optional Job Contact.
  *
- * Env: SERVICEM8_API_KEY, SERVICEM8_BASE_URL (optional), SNAPSHOT_SIGNING_SECRET
+ * Input: GET ?lead_id=...&timestamp=...&sig=... or POST body with same.
+ * Env: SERVICEM8_API_KEY, SERVICEM8_BASE_URL (optional), SNAPSHOT_SIGNING_SECRET,
+ *      SERVICEM8_JOB_STATUS, SERVICEM8_JOB_DESCRIPTION.
  */
 
 import { createHmac, randomUUID } from "crypto";
 
-/** Netlify function event (query + body). */
 interface NetlifyEvent {
   httpMethod?: string;
   queryStringParameters?: Record<string, string>;
@@ -18,15 +18,21 @@ interface NetlifyEvent {
   body?: string | null;
 }
 
+/** ServiceM8 error payload (from API response). */
+interface ServiceM8Error {
+  errorCode?: number;
+  message?: string;
+  documentation?: string;
+}
+
 const SERVICEM8_API_KEY = process.env.SERVICEM8_API_KEY;
 const SERVICEM8_BASE_URL = process.env.SERVICEM8_BASE_URL || "https://api.servicem8.com/api_1.0";
 const SNAPSHOT_SIGNING_SECRET = process.env.SNAPSHOT_SIGNING_SECRET;
-/** ServiceM8 创建工单时的必填状态，需与账号内 Job Status 一致 */
 const JOB_STATUS = process.env.SERVICEM8_JOB_STATUS || "Quote";
-/** Job 的简短描述，详细内容在 notes 里 */
 const JOB_DESCRIPTION = process.env.SERVICEM8_JOB_DESCRIPTION || "Whole house electric health check";
 
-/** Snapshot submission payload (encoded as lead_id or in body). */
+const DOC_LINK = "https://developer.servicem8.com/llms.txt";
+
 interface SnapshotPayload {
   name: string;
   email: string;
@@ -34,22 +40,14 @@ interface SnapshotPayload {
   address?: string;
   summary?: string;
   notes?: string;
-  /** Optional: risk band / result summary for job description */
   risk_band?: string;
-  /** Optional: top triggers or notes */
   triggers?: string;
-  /** Optional: link back to review page */
   review_url?: string;
-  /** Submission time (ISO string or number) */
   submitted_at?: string | number;
 }
 
 function getRequestId(): string {
   return randomUUID().slice(0, 8);
-}
-
-function base64UrlEncode(str: string): string {
-  return Buffer.from(str, "utf8").toString("base64url");
 }
 
 function base64UrlDecode(str: string): string {
@@ -66,7 +64,6 @@ function verifySignature(leadId: string, timestamp: string, sig: string): boolea
   return sig === expected && expected.length > 0;
 }
 
-/** Parse lead_id (base64url JSON) or return null. */
 function parseLeadId(leadId: string): SnapshotPayload | null {
   try {
     const raw = base64UrlDecode(leadId);
@@ -78,7 +75,31 @@ function parseLeadId(leadId: string): SnapshotPayload | null {
   }
 }
 
-/** Fetch with X-API-Key. Never log response bodies that might contain secrets. */
+/** Normalize for matching: trim, lower, collapse spaces. */
+function normalize(s: string): string {
+  return (s || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function splitName(fullName: string): { first: string; last: string } {
+  const parts = (fullName || "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) return { first: parts[0] || "Unknown", last: "" };
+  return { first: parts[0], last: parts.slice(1).join(" ") };
+}
+
+/** Parse ServiceM8 error response. Never log full body (may contain secrets). */
+function parseServiceM8Error(status: number, text: string): { message: string; documentation?: string } {
+  let message = `ServiceM8 error ${status}`;
+  let documentation: string | undefined;
+  try {
+    const data = JSON.parse(text) as ServiceM8Error;
+    if (data.message) message = data.message;
+    if (data.documentation) documentation = data.documentation;
+  } catch {
+    if (text.length < 200) message = text;
+  }
+  return { message, documentation };
+}
+
 async function servicem8Fetch(path: string, options: RequestInit = {}): Promise<Response> {
   const url = path.startsWith("http") ? path : `${SERVICEM8_BASE_URL.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
   const headers: Record<string, string> = {
@@ -89,39 +110,139 @@ async function servicem8Fetch(path: string, options: RequestInit = {}): Promise<
   return fetch(url, { ...options, headers });
 }
 
-/** Find company by email (or phone). Returns company uuid or null. */
-async function findCompanyByEmailOrPhone(email: string, phone: string): Promise<string | null> {
-  // ServiceM8 OData: $filter=field eq 'value'. Escape single quotes in value. Adjust field names if your API uses contact_email etc.
+/** List companies (first page). ServiceM8 may paginate. */
+async function listCompanies(): Promise<Array<{ uuid?: string; name?: string; address?: string; address_1?: string; address_street?: string }>> {
   try {
-    const safeEmail = email.replace(/'/g, "''");
-    const q = `?$filter=email eq '${safeEmail}'`;
-    const res = await servicem8Fetch(`company.json${q}`);
+    const res = await servicem8Fetch("company.json");
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Match by normalized name + normalized address. */
+function matchCompanyByNameAddress(
+  list: Array<{ uuid?: string; name?: string; address?: string; address_1?: string; address_street?: string }>,
+  name: string,
+  address: string
+): string | null {
+  const nName = normalize(name);
+  const nAddr = normalize(address);
+  for (const c of list) {
+    const cName = normalize((c.name as string) || "");
+    const cAddr = normalize((c.address as string) || (c.address_street as string) || (c.address_1 as string) || "");
+    if (cName && cName === nName && (nAddr === "" || cAddr === nAddr) && c.uuid) return c.uuid;
+  }
+  return null;
+}
+
+/** Find company by email via CompanyContact (Client itself has no direct email field). */
+async function findCompanyByEmail(email: string): Promise<string | null> {
+  try {
+    const safe = email.replace(/'/g, "''");
+    const res = await servicem8Fetch(`companycontact.json?$filter=email eq '${safe}'`);
     if (!res.ok) return null;
-    const list = (await res.json()) as Array<{ uuid?: string }>;
-    if (Array.isArray(list) && list.length > 0 && list[0].uuid) return list[0].uuid;
+    const list = (await res.json()) as Array<{ company_uuid?: string; email?: string }>;
+    if (Array.isArray(list) && list.length > 0 && list[0].company_uuid) return list[0].company_uuid;
   } catch {
     // ignore
   }
   try {
-    const safePhone = phone.replace(/'/g, "''");
-    const q = `?$filter=phone eq '${safePhone}'`;
-    const res = await servicem8Fetch(`company.json${q}`);
-    if (!res.ok) return null;
-    const list = (await res.json()) as Array<{ uuid?: string }>;
-    if (Array.isArray(list) && list.length > 0 && list[0].uuid) return list[0].uuid;
+    const list = (await servicem8Fetch("companycontact.json").then((r) => (r.ok ? r.json() : []))) as Array<{
+      company_uuid?: string;
+      email?: string;
+    }>;
+    const nEmail = normalize(email);
+    for (const c of list) {
+      if (normalize((c.email as string) || "") === nEmail && c.company_uuid) return c.company_uuid;
+    }
   } catch {
     // ignore
   }
   return null;
 }
 
-/** Find company by name (ServiceM8 要求 Name 唯一，同名则复用). */
+/** Generate unique client name to avoid "Name must be unique". */
+function uniqueClientName(payload: SnapshotPayload, suffix?: string): string {
+  const name = (payload.name || "").trim();
+  const addr = (payload.address || "").trim();
+  const shortAddr = addr ? addr.slice(0, 25).trim() : "";
+  const base = shortAddr ? `${name} - ${shortAddr}` : name;
+  if (suffix) return `${base} - ${suffix}`;
+  return base.slice(0, 250);
+}
+
+/**
+ * Upsert client (Company). Find by email, else by normalized name+address.
+ * If not found, create with unique name ("First Last - short address" or with suffix on collision).
+ */
+async function upsertClient(
+  payload: SnapshotPayload,
+  log: (msg: string, extra?: Record<string, unknown>) => void
+): Promise<{ company_uuid: string; reused: boolean }> {
+  if ((payload.email || "").trim()) {
+    const byEmail = await findCompanyByEmail(payload.email.trim());
+    if (byEmail) {
+      log("client reused (email)", { company_uuid: byEmail });
+      return { company_uuid: byEmail, reused: true };
+    }
+  }
+
+  const list = await listCompanies();
+  const addr = (payload.address || "").trim();
+  const byNameAddr = matchCompanyByNameAddress(list, payload.name, addr);
+  if (byNameAddr) {
+    log("client reused (name+address)", { company_uuid: byNameAddr });
+    return { company_uuid: byNameAddr, reused: true };
+  }
+
+  const createBody = (name: string): Record<string, string> => {
+    const body: Record<string, string> = {
+      name,
+    };
+    if (addr) {
+      body.address = addr;
+      body.address_street = addr;
+    }
+    return body;
+  };
+
+  let nameToUse = uniqueClientName(payload);
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const res = await servicem8Fetch("company.json", {
+      method: "POST",
+      body: JSON.stringify(createBody(nameToUse)),
+    });
+    if (res.ok) {
+      const uuid = res.headers.get("x-record-uuid") || (await res.json() as { uuid?: string }).uuid;
+      if (uuid) {
+        log("client created", { company_uuid: uuid });
+        return { company_uuid: uuid, reused: false };
+      }
+    }
+    const text = await res.text();
+    const err = parseServiceM8Error(res.status, text);
+    if (err.message.includes("Name must be unique") || err.message.includes("unique")) {
+      const existing = await findCompanyByName(nameToUse);
+      if (existing) {
+        log("client reused (after name conflict)", { company_uuid: existing });
+        return { company_uuid: existing, reused: true };
+      }
+      nameToUse = uniqueClientName(payload, randomUUID().slice(0, 4));
+      continue;
+    }
+    throw new Error(err.documentation ? `${err.message} (${err.documentation})` : err.message);
+  }
+  throw new Error("Could not create client: Name must be unique (tried with suffix)");
+}
+
 async function findCompanyByName(name: string): Promise<string | null> {
   if (!name || name.length > 250) return null;
   try {
     const safe = name.replace(/'/g, "''");
-    const q = `?$filter=name eq '${safe}'`;
-    const res = await servicem8Fetch(`company.json${q}`);
+    const res = await servicem8Fetch(`company.json?$filter=name eq '${safe}'`);
     if (!res.ok) return null;
     const list = (await res.json()) as Array<{ uuid?: string }>;
     if (Array.isArray(list) && list.length > 0 && list[0].uuid) return list[0].uuid;
@@ -131,83 +252,104 @@ async function findCompanyByName(name: string): Promise<string | null> {
   return null;
 }
 
-/** Create a new company. Returns uuid. Throws on error. */
-async function createCompany(payload: SnapshotPayload): Promise<string> {
-  const body: Record<string, string> = {
-    name: payload.name,
-    email: payload.email,
-    phone: payload.phone,
-  };
-  const addr = (payload.address || "").trim();
-  if (addr) {
-    body.address = addr;
-    body.address_1 = addr;
-  }
-  const res = await servicem8Fetch("company.json", {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`ServiceM8 create company failed: ${res.status} ${text}`);
-  }
-  const uuid = res.headers.get("x-record-uuid");
-  if (uuid) return uuid;
-  const data = (await res.json()) as { uuid?: string };
-  if (data?.uuid) return data.uuid;
-  throw new Error("ServiceM8 company creation did not return uuid");
-}
-
-/** Update company with contact + address (reused companies get latest details). */
-async function updateCompanyDetails(companyUuid: string, payload: SnapshotPayload): Promise<void> {
+/** List company contacts for a company. */
+async function listCompanyContacts(companyUuid: string): Promise<Array<{ uuid?: string; email?: string }>> {
   try {
-    const body: Record<string, string> = {
-      uuid: companyUuid,
-      name: payload.name,
-      email: payload.email,
-      phone: payload.phone,
-    };
-    const addr = (payload.address || "").trim();
-    if (addr) {
-      body.address = addr;
-      body.address_1 = addr;
-    }
-    await servicem8Fetch(`company/${companyUuid}.json`, { method: "POST", body: JSON.stringify(body) });
+    const safe = companyUuid.replace(/'/g, "''");
+    const res = await servicem8Fetch(`companycontact.json?$filter=company_uuid eq '${safe}'`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
   } catch {
-    // Non-fatal
+    return [];
   }
 }
 
-/** Create company contact (name, email, phone). Returns company_contact_uuid or null. */
-async function createCompanyContact(companyUuid: string, payload: SnapshotPayload): Promise<string | null> {
+/**
+ * Upsert company contact: match by email; update if found, else create.
+ */
+async function upsertCompanyContact(
+  companyUuid: string,
+  payload: SnapshotPayload,
+  log: (msg: string, extra?: Record<string, unknown>) => void
+): Promise<string | null> {
+  const contacts = await listCompanyContacts(companyUuid);
+  const nEmail = normalize((payload.email || "").trim());
+  const existing = contacts.find((c) => normalize((c.email as string) || "") === nEmail);
+
+  const { first, last } = splitName((payload.name || "").trim());
+  const body = {
+    company_uuid: companyUuid,
+    first,
+    last,
+    email: (payload.email || "").trim(),
+    phone: (payload.phone || "").trim(),
+    mobile: (payload.phone || "").trim(),
+    type: "JOB",
+    is_primary_contact: "1",
+  };
+
+  if (existing?.uuid) {
+    try {
+      await servicem8Fetch(`companycontact/${existing.uuid}.json`, {
+        method: "POST",
+        body: JSON.stringify({ uuid: existing.uuid, ...body }),
+      });
+      log("company_contact updated", { company_contact_uuid: existing.uuid });
+      return existing.uuid;
+    } catch {
+      // non-fatal
+    }
+    return existing.uuid;
+  }
+
   try {
-    const body: Record<string, string> = {
-      company_uuid: companyUuid,
-      name: payload.name,
-      email: payload.email,
-      phone: payload.phone,
-    };
     const res = await servicem8Fetch("companycontact.json", { method: "POST", body: JSON.stringify(body) });
     if (!res.ok) return null;
-    const uuid = res.headers.get("x-record-uuid");
-    if (uuid) return uuid;
-    const data = (await res.json()) as { uuid?: string };
-    return data?.uuid ?? null;
+    const uuid = res.headers.get("x-record-uuid") || (await res.json() as { uuid?: string }).uuid;
+    if (uuid) log("company_contact created", { company_contact_uuid: uuid });
+    return uuid || null;
   } catch {
     return null;
   }
 }
 
-/** Create job: short job_description, long content in notes. */
-async function createJob(companyUuid: string, payload: SnapshotPayload): Promise<string> {
+/** Create job (company_uuid, job_address, job_description, status only). */
+async function createJob(
+  companyUuid: string,
+  payload: SnapshotPayload,
+  log: (msg: string, extra?: Record<string, unknown>) => void
+): Promise<string> {
+  const jobAddress = (payload.address || "").trim() || "Address not provided";
+  const body = {
+    company_uuid: companyUuid,
+    job_address: jobAddress,
+    job_description: JOB_DESCRIPTION,
+    status: JOB_STATUS,
+  };
+  const res = await servicem8Fetch("job.json", { method: "POST", body: JSON.stringify(body) });
+  if (!res.ok) {
+    const text = await res.text();
+    const err = parseServiceM8Error(res.status, text);
+    throw new Error(err.documentation ? `${err.message} (${err.documentation})` : err.message);
+  }
+  const uuid = res.headers.get("x-record-uuid") || (await res.json() as { uuid?: string }).uuid;
+  if (uuid) {
+    log("job created", { job_uuid: uuid });
+    return uuid;
+  }
+  throw new Error("ServiceM8 job creation did not return uuid");
+}
+
+/** Build internal note body from snapshot (for Note resource). */
+function buildNoteBody(payload: SnapshotPayload): string {
   const submittedAt =
     payload.submitted_at != null
       ? typeof payload.submitted_at === "number"
         ? new Date(payload.submitted_at).toISOString()
         : String(payload.submitted_at)
       : new Date().toISOString();
-
-  const noteParts: string[] = [
+  const parts: string[] = [
     "Source: Snapshot",
     `Submission: ${submittedAt}`,
     payload.risk_band ? `Risk/Result: ${payload.risk_band}` : "",
@@ -216,61 +358,72 @@ async function createJob(companyUuid: string, payload: SnapshotPayload): Promise
     payload.notes ? `Notes: ${payload.notes}` : "",
     payload.review_url ? `Review: ${payload.review_url}` : "",
   ].filter(Boolean);
-  const jobNotes = noteParts.join("\n");
-  const jobAddress = (payload.address || "").trim() || "Address not provided";
-
-  const body: Record<string, string> = {
-    company_uuid: companyUuid,
-    job_address: jobAddress,
-    job_description: JOB_DESCRIPTION,
-    status: JOB_STATUS,
-  };
-  if (jobNotes) {
-    body.notes = jobNotes;
-    body.job_notes = jobNotes;
-  }
-
-  const res = await servicem8Fetch("job.json", {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`ServiceM8 create job failed: ${res.status} ${text}`);
-  }
-
-  const uuid = res.headers.get("x-record-uuid");
-  if (uuid) return uuid;
-  const data = (await res.json()) as { uuid?: string };
-  if (data?.uuid) return data.uuid;
-  throw new Error("ServiceM8 job creation did not return uuid");
+  return parts.join("\n");
 }
 
-/** Create job contact: link job to company contact, or create with name/email/phone. */
-async function createJobContact(
+/**
+ * Create a ServiceM8 Note and associate to the job. Non-fatal on failure.
+ * Tries job_uuid + note body (field name may be note/body/text per API).
+ */
+async function createNoteForJob(
   jobUuid: string,
-  companyUuid: string,
+  noteBody: string,
+  log: (msg: string, extra?: Record<string, unknown>) => void
+): Promise<string | null> {
+  if (!noteBody.trim()) return null;
+  for (const relatedObject of ["job", "Job"]) {
+    try {
+      const res = await servicem8Fetch("note.json", {
+        method: "POST",
+        body: JSON.stringify({
+          related_object: relatedObject,
+          related_object_uuid: jobUuid,
+          note: noteBody,
+        }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { uuid?: string };
+        const uuid = res.headers.get("x-record-uuid") || data?.uuid;
+        if (uuid) log("note created", { note_uuid: uuid });
+        return uuid || null;
+      }
+    } catch (e) {
+      log("note create error (non-fatal)", { error: String(e) });
+    }
+  }
+  log("note create failed (non-fatal)");
+  return null;
+}
+
+/** Optional: create job contact linked to job (and company contact if available). */
+async function createJobContactOptional(
+  jobUuid: string,
   payload: SnapshotPayload,
-  companyContactUuid: string | null
+  companyContactUuid: string | null,
+  log: (msg: string, extra?: Record<string, unknown>) => void
 ): Promise<void> {
   try {
+    const { first, last } = splitName((payload.name || "").trim());
     const body: Record<string, string> = { job_uuid: jobUuid };
     if (companyContactUuid) {
       body.company_contact_uuid = companyContactUuid;
     } else {
-      body.name = payload.name;
-      body.email = payload.email;
-      body.phone = payload.phone;
-      body.mobile = payload.phone;
+      body.first = first;
+      body.last = last;
+      body.email = (payload.email || "").trim();
+      body.phone = (payload.phone || "").trim();
+      body.mobile = (payload.phone || "").trim();
     }
+    body.type = "JOB";
     const res = await servicem8Fetch("jobcontact.json", { method: "POST", body: JSON.stringify(body) });
-    if (!res.ok) {
-      const text = await res.text();
-      console.warn("ServiceM8 create job contact failed (non-fatal):", res.status, text);
+    if (res.ok) {
+      const uuid = res.headers.get("x-record-uuid");
+      if (uuid) log("job_contact created", { job_contact_uuid: uuid });
+    } else {
+      log("job_contact create failed (non-fatal)", { status: res.status });
     }
   } catch (e) {
-    console.warn("ServiceM8 create job contact error (non-fatal):", e);
+    log("job_contact error (non-fatal)", { error: String(e) });
   }
 }
 
@@ -287,19 +440,13 @@ function htmlPage(title: string, body: string, isError: boolean): string {
 }
 
 function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 export const handler = async (event: NetlifyEvent): Promise<{ statusCode: number; headers: Record<string, string>; body: string }> => {
   const requestId = getRequestId();
   const method = event.httpMethod || "GET";
-
-  // Prefer JSON for programmatic calls, HTML for browser
-  const accept = event.headers["accept"] || "";
+  const accept = event.headers?.["accept"] || "";
   const wantsHtml = accept.includes("text/html");
 
   const log = (msg: string, extra?: Record<string, unknown>) => {
@@ -308,14 +455,11 @@ export const handler = async (event: NetlifyEvent): Promise<{ statusCode: number
 
   if (!SERVICEM8_API_KEY) {
     log("missing SERVICEM8_API_KEY");
-    const body = JSON.stringify({ ok: false, error: "Service not configured" });
-    return { statusCode: 503, headers: { "Content-Type": "application/json" }, body };
+    return { statusCode: 503, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ok: false, error: "Service not configured" }) };
   }
-
   if (!SNAPSHOT_SIGNING_SECRET) {
     log("missing SNAPSHOT_SIGNING_SECRET");
-    const body = JSON.stringify({ ok: false, error: "Service not configured" });
-    return { statusCode: 503, headers: { "Content-Type": "application/json" }, body };
+    return { statusCode: 503, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ok: false, error: "Service not configured" }) };
   }
 
   let leadId: string;
@@ -335,115 +479,74 @@ export const handler = async (event: NetlifyEvent): Promise<{ statusCode: number
       sig = body.sig || "";
       if (!leadId && body.payload && body.sig) {
         const raw = typeof body.payload === "string" ? body.payload : JSON.stringify(body.payload);
+        const base64UrlEncode = (s: string) => Buffer.from(s, "utf8").toString("base64url");
         leadId = base64UrlEncode(raw);
         timestamp = body.timestamp || String(Date.now());
         sig = body.sig;
       }
     } catch {
-      const body = JSON.stringify({ ok: false, error: "Invalid request body" });
-      return { statusCode: 400, headers: { "Content-Type": "application/json" }, body };
+      return { statusCode: 400, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ok: false, error: "Invalid request body" }) };
     }
   } else {
-    const body = JSON.stringify({ ok: false, error: "Method not allowed" });
-    return { statusCode: 405, headers: { "Content-Type": "application/json" }, body };
+    return { statusCode: 405, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ok: false, error: "Method not allowed" }) };
   }
 
   if (!leadId || !timestamp || !sig) {
     log("missing lead_id, timestamp or sig");
-    const body = JSON.stringify({ ok: false, error: "Missing lead_id, timestamp or sig" });
-    return { statusCode: 400, headers: { "Content-Type": "application/json" }, body };
+    return { statusCode: 400, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ok: false, error: "Missing lead_id, timestamp or sig" }) };
   }
-
   if (!verifySignature(leadId, timestamp, sig)) {
     log("invalid signature");
-    const body = JSON.stringify({ ok: false, error: "Invalid signature" });
-    return { statusCode: 403, headers: { "Content-Type": "application/json" }, body };
+    return { statusCode: 403, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ok: false, error: "Invalid signature" }) };
   }
 
   const payload = parseLeadId(leadId);
   if (!payload) {
     log("invalid lead_id payload");
-    const body = JSON.stringify({ ok: false, error: "Invalid lead_id" });
-    return { statusCode: 400, headers: { "Content-Type": "application/json" }, body };
+    return { statusCode: 400, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ok: false, error: "Invalid lead_id" }) };
   }
 
-  log("processing", { lead_id: leadId.slice(0, 20) + "..." });
+  log("processing", { lead_id_prefix: leadId.slice(0, 20) + "..." });
 
   let companyUuid: string;
   let jobUuid: string;
   let companyReused = false;
 
   try {
-    let existing = await findCompanyByEmailOrPhone(payload.email, payload.phone);
-    if (existing) {
-      companyUuid = existing;
-      companyReused = true;
-      log("company reused (email/phone)", { company_uuid: companyUuid });
-    } else {
-      existing = await findCompanyByName(payload.name);
-      if (existing) {
-        companyUuid = existing;
-        companyReused = true;
-        log("company reused (name)", { company_uuid: companyUuid });
-      } else {
-        companyUuid = await createCompany(payload);
-        log("company created", { company_uuid: companyUuid });
-      }
-    }
+    const clientResult = await upsertClient(payload, log);
+    companyUuid = clientResult.company_uuid;
+    companyReused = clientResult.reused;
 
-    await updateCompanyDetails(companyUuid, payload);
+    const companyContactUuid = await upsertCompanyContact(companyUuid, payload, log);
 
-    const companyContactUuid = await createCompanyContact(companyUuid, payload);
+    jobUuid = await createJob(companyUuid, payload, log);
 
-    jobUuid = await createJob(companyUuid, payload);
-    log("job created", { job_uuid: jobUuid });
+    const noteBody = buildNoteBody(payload);
+    await createNoteForJob(jobUuid, noteBody, log);
 
-    await createJobContact(jobUuid, companyUuid, payload, companyContactUuid);
+    await createJobContactOptional(jobUuid, payload, companyContactUuid, log);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     log("error", { error: message });
-    const body = JSON.stringify({ ok: false, error: message });
+    const isClientErr = /invalid|required|unique|not found|bad request|mandatory/i.test(message);
+    const statusCode = isClientErr ? 400 : 500;
+    const docHint = message.includes("developer.servicem8") ? "" : ` See ${DOC_LINK}`;
+    const body = JSON.stringify({ ok: false, error: message + docHint });
     if (wantsHtml) {
-      const html = htmlPage(
-        "Create ServiceM8 Job",
-        `<p>Error: ${escapeHtml(message)}</p>`,
-        true
-      );
-      return { statusCode: 502, headers: { "Content-Type": "text/html; charset=utf-8" }, body: html };
+      return { statusCode, headers: { "Content-Type": "text/html; charset=utf-8" }, body: htmlPage("Create ServiceM8 Job", `<p>Error: ${escapeHtml(message)}</p><p><a href="${DOC_LINK}">ServiceM8 docs</a></p>`, true) };
     }
-    return { statusCode: 502, headers: { "Content-Type": "application/json" }, body };
+    return { statusCode, headers: { "Content-Type": "application/json" }, body };
   }
 
-  const jsonBody = JSON.stringify({
-    ok: true,
-    company_uuid: companyUuid,
-    job_uuid: jobUuid,
-    company_reused: companyReused,
-  });
+  const jsonBody = JSON.stringify({ ok: true, company_uuid: companyUuid, job_uuid: jobUuid, company_reused: companyReused });
 
   if (wantsHtml) {
     const html = htmlPage(
       "Create ServiceM8 Job",
-      `
-      <p>Job created successfully.</p>
-      <ul>
-        <li>Company: ${escapeHtml(companyUuid)} ${companyReused ? "(reused)" : "(new)"}</li>
-        <li>Job: ${escapeHtml(jobUuid)}</li>
-      </ul>
-      <p><a href="${escapeHtml(SERVICEM8_BASE_URL.replace("/api_1.0", ""))}">Open ServiceM8</a></p>
-      `,
+      `<p>Job created successfully.</p><ul><li>Company: ${escapeHtml(companyUuid)} ${companyReused ? "(reused)" : "(new)"}</li><li>Job: ${escapeHtml(jobUuid)}</li></ul><p><a href="${escapeHtml(SERVICEM8_BASE_URL.replace("/api_1.0", ""))}">Open ServiceM8</a></p>`,
       false
     );
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "text/html; charset=utf-8" },
-      body: html,
-    };
+    return { statusCode: 200, headers: { "Content-Type": "text/html; charset=utf-8" }, body: html };
   }
-
-  return {
-    statusCode: 200,
-    headers: { "Content-Type": "application/json" },
-    body: jsonBody,
-  };
+  return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: jsonBody };
 };

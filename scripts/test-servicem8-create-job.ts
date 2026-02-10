@@ -1,14 +1,14 @@
 /**
- * Integration test: call createServiceM8Job with a signed mock payload.
+ * Lightweight integration test: call createServiceM8Job with a signed mock payload.
+ * Exercises: upsertClient (find by email / name+address, unique name on create),
+ * upsertCompanyContact, create Job, create Note, optional Job Contact.
  *
  * Usage:
- *   1. Copy .env.example to .env and set SNAPSHOT_SIGNING_SECRET (and optionally SERVICEM8_*).
- *   2. Run Netlify dev server: npx netlify dev
+ *   1. Copy .env.example to .env and set SNAPSHOT_SIGNING_SECRET (and SERVICEM8_* for real API).
+ *   2. Run Netlify dev: npx netlify dev
  *   3. In another terminal: npx ts-node scripts/test-servicem8-create-job.ts
- *      Or: node --loader ts-node/esm scripts/test-servicem8-create-job.ts
  *
- * Reads .env from project root. Calls POST /.netlify/functions/createServiceM8Job with
- * lead_id, timestamp, sig (HMAC over lead_id + timestamp).
+ * Run twice with the same email in the mock payload to verify client/company is reused (company_reused: true).
  */
 
 import { createHmac } from "crypto";
