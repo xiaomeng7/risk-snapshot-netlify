@@ -107,6 +107,7 @@ exports.handler = async (event) => {
 
   // 生成 ServiceM8 签名链接（用于邮件正文 + 返回给前端）
   let servicem8 = null;
+  let html = null;
   if (SNAPSHOT_SIGNING_SECRET) {
     const address = type === 'lead' ? (body.address || '') : (body.address || body.suburb || '');
     const payload = {
@@ -122,7 +123,6 @@ exports.handler = async (event) => {
     const timestamp = String(Date.now());
     const sig = crypto.createHmac('sha256', SNAPSHOT_SIGNING_SECRET).update(leadId + timestamp).digest('hex');
     servicem8 = { lead_id: leadId, timestamp, sig };
-    // 在邮件正文末尾加上「Create ServiceM8 Job」链接，方便收件人在邮件里点击
     if (SITE_URL) {
       const base = SITE_URL.replace(/\/$/, '');
       const link = base + '/.netlify/functions/createServiceM8Job?lead_id=' + encodeURIComponent(leadId) + '&timestamp=' + encodeURIComponent(timestamp) + '&sig=' + encodeURIComponent(sig);
@@ -130,6 +130,10 @@ exports.handler = async (event) => {
         ? '\n\n---\n创建 ServiceM8 工单（点击下方链接）：\n' + link
         : '\n\n---\nCreate ServiceM8 Job (click link below):\n' + link;
       text = text + linkLine;
+      const btnText = lang === 'zh' ? '创建 ServiceM8 工单' : 'Create ServiceM8 Job';
+      const textForHtml = text.replace(linkLine, '').trim();
+      const safeHtml = textForHtml.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>\n');
+      html = '<div style="font-family:sans-serif;line-height:1.5;">' + safeHtml + '</div><p style="margin-top:20px;"><a href="' + link + '" style="display:inline-block;padding:12px 24px;background:#2563eb;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">' + btnText + '</a></p>';
     }
   }
 
@@ -137,13 +141,15 @@ exports.handler = async (event) => {
   const fromDisplay = (lang === 'zh' ? '电路风险快照 - ' : 'Risk Snapshot - ') + name;
   const resend = new Resend(RESEND_API_KEY);
   try {
-    const result = await resend.emails.send({
+    const emailPayload = {
       from: fromDisplay + ' <' + FROM_EMAIL + '>',
       to: TO_EMAIL,
       replyTo: email,
       subject: subject,
       text: text,
-    });
+    };
+    if (html) emailPayload.html = html;
+    const result = await resend.emails.send(emailPayload);
     const data = result.data;
     const error = result.error;
     if (error) {
