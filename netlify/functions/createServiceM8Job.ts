@@ -30,6 +30,8 @@ const SERVICEM8_BASE_URL = process.env.SERVICEM8_BASE_URL || "https://api.servic
 const SNAPSHOT_SIGNING_SECRET = process.env.SNAPSHOT_SIGNING_SECRET;
 const JOB_STATUS = process.env.SERVICEM8_JOB_STATUS || "Quote";
 const JOB_DESCRIPTION = process.env.SERVICEM8_JOB_DESCRIPTION || "Whole house electric health check";
+const INSPECTION_BASE_URL = process.env.INSPECTION_BASE_URL || "";
+const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || "";
 // ServiceM8 contact type values usually: "Job Contact" / "Billing Contact" / "Property Manager"
 const COMPANY_CONTACT_TYPE = process.env.SERVICEM8_COMPANY_CONTACT_TYPE || "Job Contact";
 const JOB_CONTACT_TYPE = process.env.SERVICEM8_JOB_CONTACT_TYPE || "Job Contact";
@@ -47,6 +49,11 @@ interface SnapshotPayload {
   triggers?: string;
   review_url?: string;
   submitted_at?: string | number;
+}
+
+interface CreateJobResult {
+  job_uuid: string;
+  job_number?: string;
 }
 
 function getRequestId(): string {
@@ -101,6 +108,14 @@ function parseServiceM8Error(status: number, text: string): { message: string; d
     if (text.length < 200) message = text;
   }
   return { message, documentation };
+}
+
+function extractJobNumber(data: unknown): string | undefined {
+  if (!data || typeof data !== "object") return undefined;
+  const obj = data as Record<string, unknown>;
+  const value = obj.generated_job_id ?? obj.job_number ?? obj.generated_job_number;
+  if (value === undefined || value === null) return undefined;
+  return String(value);
 }
 
 async function servicem8Fetch(path: string, options: RequestInit = {}): Promise<Response> {
@@ -322,7 +337,7 @@ async function createJob(
   companyUuid: string,
   payload: SnapshotPayload,
   log: (msg: string, extra?: Record<string, unknown>) => void
-): Promise<string> {
+): Promise<CreateJobResult> {
   const jobAddress = (payload.address || "").trim() || "Address not provided";
   const body = {
     company_uuid: companyUuid,
@@ -336,12 +351,77 @@ async function createJob(
     const err = parseServiceM8Error(res.status, text);
     throw new Error(err.documentation ? `${err.message} (${err.documentation})` : err.message);
   }
-  const uuid = res.headers.get("x-record-uuid") || (await res.json() as { uuid?: string }).uuid;
+  let data: Record<string, unknown> = {};
+  try {
+    data = (await res.json()) as Record<string, unknown>;
+  } catch {
+    // Some endpoints may return empty body and only x-record-uuid header.
+  }
+  const uuid = res.headers.get("x-record-uuid") || (data.uuid as string | undefined);
   if (uuid) {
-    log("job created", { job_uuid: uuid });
-    return uuid;
+    const jobNumber = extractJobNumber(data);
+    log("job created", { job_uuid: uuid, job_number: jobNumber || "" });
+    return { job_uuid: uuid, job_number: jobNumber };
   }
   throw new Error("ServiceM8 job creation did not return uuid");
+}
+
+async function fetchJobNumberByUuid(
+  jobUuid: string,
+  log: (msg: string, extra?: Record<string, unknown>) => void
+): Promise<string | undefined> {
+  try {
+    const res = await servicem8Fetch(`job/${jobUuid}.json`);
+    if (!res.ok) {
+      log("job lookup failed", { job_uuid: jobUuid, status: res.status });
+      return undefined;
+    }
+    const data = (await res.json()) as Record<string, unknown>;
+    const jobNumber = extractJobNumber(data);
+    if (jobNumber) log("job number fetched", { job_uuid: jobUuid, job_number: jobNumber });
+    return jobNumber;
+  } catch (e) {
+    log("job lookup error", { job_uuid: jobUuid, error: String(e) });
+    return undefined;
+  }
+}
+
+async function pushServiceJobLinkToInspection(
+  input: { job_uuid: string; job_number: string },
+  log: (msg: string, extra?: Record<string, unknown>) => void
+): Promise<{ ok: boolean; warning?: string }> {
+  if (!INSPECTION_BASE_URL || !INTERNAL_API_KEY) {
+    const warning = "Inspection push skipped: INSPECTION_BASE_URL or INTERNAL_API_KEY not set";
+    log("inspection push skipped", { reason: warning });
+    return { ok: false, warning };
+  }
+  try {
+    const url = INSPECTION_BASE_URL.replace(/\/$/, "") + "/.netlify/functions/internalServiceJobLink";
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-internal-api-key": INTERNAL_API_KEY,
+      },
+      body: JSON.stringify({
+        job_uuid: input.job_uuid,
+        job_number: input.job_number,
+        source: "snapshot",
+      }),
+    });
+    if (!res.ok) {
+      const bodyText = await res.text().catch(() => "");
+      const warning = `Inspection push failed: ${res.status}`;
+      log("inspection push failed", { status: res.status, body_preview: bodyText.slice(0, 200) });
+      return { ok: false, warning };
+    }
+    log("inspection push success", { job_uuid: input.job_uuid, job_number: input.job_number });
+    return { ok: true };
+  } catch (e) {
+    const warning = "Inspection push error";
+    log("inspection push error", { error: String(e) });
+    return { ok: false, warning };
+  }
 }
 
 /** Build internal note body from snapshot (for Note resource). */
@@ -513,7 +593,9 @@ export const handler = async (event: NetlifyEvent): Promise<{ statusCode: number
 
   let companyUuid: string;
   let jobUuid: string;
+  let jobNumber: string | undefined;
   let companyReused = false;
+  const warnings: string[] = [];
 
   try {
     const clientResult = await upsertClient(payload, log);
@@ -522,12 +604,24 @@ export const handler = async (event: NetlifyEvent): Promise<{ statusCode: number
 
     const companyContactUuid = await upsertCompanyContact(companyUuid, payload, log);
 
-    jobUuid = await createJob(companyUuid, payload, log);
+    const created = await createJob(companyUuid, payload, log);
+    jobUuid = created.job_uuid;
+    jobNumber = created.job_number;
+
+    if (!jobNumber) {
+      jobNumber = await fetchJobNumberByUuid(jobUuid, log);
+      if (!jobNumber) warnings.push("job_number not found after create");
+    }
 
     const noteBody = buildNoteBody(payload);
     await createNoteForJob(jobUuid, noteBody, log);
 
     await createJobContactOptional(jobUuid, payload, companyContactUuid, log);
+
+    if (jobNumber) {
+      const pushed = await pushServiceJobLinkToInspection({ job_uuid: jobUuid, job_number: jobNumber }, log);
+      if (!pushed.ok && pushed.warning) warnings.push(pushed.warning);
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     log("error", { error: message });
@@ -541,7 +635,14 @@ export const handler = async (event: NetlifyEvent): Promise<{ statusCode: number
     return { statusCode, headers: { "Content-Type": "application/json" }, body };
   }
 
-  const jsonBody = JSON.stringify({ ok: true, company_uuid: companyUuid, job_uuid: jobUuid, company_reused: companyReused });
+  const jsonBody = JSON.stringify({
+    ok: true,
+    company_uuid: companyUuid,
+    job_uuid: jobUuid,
+    job_number: jobNumber || null,
+    company_reused: companyReused,
+    warnings,
+  });
 
   if (wantsHtml) {
     const html = htmlPage(

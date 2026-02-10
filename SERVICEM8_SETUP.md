@@ -16,6 +16,8 @@
 | `SERVICEM8_JOB_CONTACT_TYPE` | Job Contact 分类，默认 `Job Contact`（也可 `Billing Contact` / `Property Manager`） | 可选 |
 | `SNAPSHOT_SIGNING_SECRET` | 用于对 lead_id + timestamp 做 HMAC 签名的密钥；与生成「Create ServiceM8 Job」链接的 send-booking 共用 | **是**（若要用该链接） |
 | `SITE_URL` | 站点根 URL（如 `https://yoursite.netlify.app`），用于在**邮件正文**里生成「Create ServiceM8 Job」可点击链接 | 若要在邮件里看到链接则**必填** |
+| `INSPECTION_BASE_URL` | Inspection 站点根 URL（如 `https://inspection.example.com`），用于回推 `job_uuid + job_number` | 可选（不配则跳过回推） |
+| `INTERNAL_API_KEY` | 调用 Inspection 内部函数 `internalServiceJobLink` 的 API Key（通过 `x-internal-api-key` 传递） | 若启用回推则**必填** |
 
 - 密钥只放在环境变量中，不要写进代码或仓库。
 - `SNAPSHOT_SIGNING_SECRET` 需与 `send-booking` 中生成签名时使用的值一致（同一次部署内由 Netlify 注入）。
@@ -27,6 +29,7 @@
 3. `send-booking` 在邮件正文中生成「Create ServiceM8 Job」可点击链接：  
    `/.netlify/functions/createServiceM8Job?lead_id=...&timestamp=...&sig=...`
 4. 收件人从邮件点击后 `createServiceM8Job`：校验签名 → 按 email/phone 查找或创建 Company → 创建 Job 与 Note。
+5. 若配置了 `INSPECTION_BASE_URL` + `INTERNAL_API_KEY`，会把 `job_uuid + job_number` 回推给 Inspection 的 `/.netlify/functions/internalServiceJobLink`（失败仅记 warning，不阻断主流程）。
 
 ## 3. 本地测试脚本
 
@@ -40,6 +43,8 @@ npx netlify dev
 
 # 3. 另开终端执行
 npx ts-node scripts/test-servicem8-create-job.ts
+# （可选）只验证回推 Inspection：
+npx ts-node scripts/test-inspection-link-push.ts
 ```
 
 脚本会使用 mock 的 lead  payload 调用 `createServiceM8Job`（POST），并打印返回的 `company_uuid` / `job_uuid` 或错误信息。
