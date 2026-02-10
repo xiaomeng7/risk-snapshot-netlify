@@ -11,7 +11,7 @@
  * Run twice with the same email in the mock payload to verify client/company is reused (company_reused: true).
  */
 
-import { createHmac } from "crypto";
+import { createCipheriv, createHash, createHmac, randomBytes } from "crypto";
 import { readFileSync, existsSync } from "fs";
 import { resolve } from "path";
 
@@ -41,8 +41,18 @@ const env = loadEnv();
 const SECRET = env.SNAPSHOT_SIGNING_SECRET;
 const BASE = env.NETLIFY_DEV_URL || "http://localhost:8888";
 
-function base64UrlEncode(str: string): string {
-  return Buffer.from(str, "utf8").toString("base64url");
+function deriveAesKey(secret: string): Buffer {
+  return createHash("sha256").update(secret, "utf8").digest();
+}
+
+function encryptLeadPayload(payload: unknown, secret: string): string {
+  const iv = randomBytes(12);
+  const key = deriveAesKey(secret);
+  const cipher = createCipheriv("aes-256-gcm", key, iv);
+  const plaintext = Buffer.from(JSON.stringify(payload), "utf8");
+  const encrypted = Buffer.concat([cipher.update(plaintext), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return `v1.${iv.toString("base64url")}.${encrypted.toString("base64url")}.${tag.toString("base64url")}`;
 }
 
 function sign(secret: string, message: string): string {
@@ -65,7 +75,7 @@ async function main(): Promise<void> {
     submitted_at: Date.now(),
   };
 
-  const leadId = base64UrlEncode(JSON.stringify(payload));
+  const leadId = encryptLeadPayload(payload, SECRET);
   const timestamp = String(Date.now());
   const sig = sign(SECRET, leadId + timestamp);
 

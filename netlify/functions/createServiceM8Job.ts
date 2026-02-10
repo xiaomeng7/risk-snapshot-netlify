@@ -9,7 +9,7 @@
  *      SERVICEM8_JOB_STATUS, SERVICEM8_JOB_DESCRIPTION.
  */
 
-import { createHmac, randomUUID } from "crypto";
+import { createDecipheriv, createHash, createHmac, randomUUID, timingSafeEqual } from "crypto";
 
 interface NetlifyEvent {
   httpMethod?: string;
@@ -32,6 +32,9 @@ const JOB_STATUS = process.env.SERVICEM8_JOB_STATUS || "Quote";
 const JOB_DESCRIPTION = process.env.SERVICEM8_JOB_DESCRIPTION || "Whole house electric health check";
 const INSPECTION_BASE_URL = process.env.INSPECTION_BASE_URL || "";
 const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || "";
+const LEAD_TOKEN_VERSION = "v1";
+const LINK_MAX_AGE_SECONDS = Math.max(60, Number(process.env.SERVICEM8_LINK_MAX_AGE_SECONDS || 7 * 24 * 60 * 60));
+const MAX_FUTURE_SKEW_SECONDS = 5 * 60;
 // ServiceM8 contact type values usually: "Job Contact" / "Billing Contact" / "Property Manager"
 const COMPANY_CONTACT_TYPE = process.env.SERVICEM8_COMPANY_CONTACT_TYPE || "Job Contact";
 const JOB_CONTACT_TYPE = process.env.SERVICEM8_JOB_CONTACT_TYPE || "Job Contact";
@@ -71,18 +74,59 @@ function sign(secret: string, message: string): string {
 function verifySignature(leadId: string, timestamp: string, sig: string): boolean {
   if (!SNAPSHOT_SIGNING_SECRET) return false;
   const expected = sign(SNAPSHOT_SIGNING_SECRET, leadId + timestamp);
-  return sig === expected && expected.length > 0;
+  if (!expected || !sig || expected.length !== sig.length) return false;
+  return timingSafeEqual(Buffer.from(sig, "utf8"), Buffer.from(expected, "utf8"));
+}
+
+function deriveAesKey(secret: string): Buffer {
+  return createHash("sha256").update(secret, "utf8").digest();
+}
+
+function decryptLeadToken(leadId: string): string | null {
+  if (!SNAPSHOT_SIGNING_SECRET) return null;
+  const parts = leadId.split(".");
+  if (parts.length !== 4 || parts[0] !== LEAD_TOKEN_VERSION) return null;
+  try {
+    const iv = Buffer.from(parts[1], "base64url");
+    const encrypted = Buffer.from(parts[2], "base64url");
+    const tag = Buffer.from(parts[3], "base64url");
+    const key = deriveAesKey(SNAPSHOT_SIGNING_SECRET);
+    const decipher = createDecipheriv("aes-256-gcm", key, iv);
+    decipher.setAuthTag(tag);
+    const plaintext = Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
+    return plaintext;
+  } catch {
+    return null;
+  }
 }
 
 function parseLeadId(leadId: string): SnapshotPayload | null {
   try {
-    const raw = base64UrlDecode(leadId);
+    // v1: encrypted token; legacy fallback: base64url JSON
+    const raw = decryptLeadToken(leadId) || base64UrlDecode(leadId);
     const data = JSON.parse(raw) as SnapshotPayload;
     if (!data.email || !data.name) return null;
     return data;
   } catch {
     return null;
   }
+}
+
+function parseTimestampMs(timestamp: string): number | null {
+  const s = (timestamp || "").trim();
+  if (!/^\d{10,16}$/.test(s)) return null;
+  const n = Number(s);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return s.length <= 10 ? n * 1000 : n;
+}
+
+function validateLinkAge(timestamp: string): { ok: true } | { ok: false; reason: string } {
+  const tsMs = parseTimestampMs(timestamp);
+  if (!tsMs) return { ok: false, reason: "Invalid timestamp" };
+  const now = Date.now();
+  if (tsMs - now > MAX_FUTURE_SKEW_SECONDS * 1000) return { ok: false, reason: "Timestamp is in the future" };
+  if (now - tsMs > LINK_MAX_AGE_SECONDS * 1000) return { ok: false, reason: "Link expired" };
+  return { ok: true };
 }
 
 /** Normalize for matching: trim, lower, collapse spaces. */
@@ -581,6 +625,12 @@ export const handler = async (event: NetlifyEvent): Promise<{ statusCode: number
   if (!verifySignature(leadId, timestamp, sig)) {
     log("invalid signature");
     return { statusCode: 403, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ok: false, error: "Invalid signature" }) };
+  }
+  const ageCheck = validateLinkAge(timestamp);
+  if (!ageCheck.ok) {
+    log("expired or invalid timestamp", { reason: ageCheck.reason });
+    const statusCode = ageCheck.reason === "Link expired" ? 410 : 400;
+    return { statusCode, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ok: false, error: ageCheck.reason }) };
   }
 
   const payload = parseLeadId(leadId);

@@ -14,7 +14,8 @@
 | `SERVICEM8_JOB_DESCRIPTION` | 工单描述（简短），默认 `Whole house electric health check`；详细内容（来源、摘要等）在工单 Notes 中 | 可选 |
 | `SERVICEM8_COMPANY_CONTACT_TYPE` | Company Contact 分类，默认 `Job Contact`（也可 `Billing Contact` / `Property Manager`） | 可选 |
 | `SERVICEM8_JOB_CONTACT_TYPE` | Job Contact 分类，默认 `Job Contact`（也可 `Billing Contact` / `Property Manager`） | 可选 |
-| `SNAPSHOT_SIGNING_SECRET` | 用于对 lead_id + timestamp 做 HMAC 签名的密钥；与生成「Create ServiceM8 Job」链接的 send-booking 共用 | **是**（若要用该链接） |
+| `SNAPSHOT_SIGNING_SECRET` | 用于对 lead token 加密（AES-GCM）及 `lead_id + timestamp` 做 HMAC 签名；与 send-booking 共用 | **是**（若要用该链接） |
+| `SERVICEM8_LINK_MAX_AGE_SECONDS` | 链接有效期秒数，默认 `604800`（7天） | 可选 |
 | `SITE_URL` | 站点根 URL（如 `https://yoursite.netlify.app`），用于在**邮件正文**里生成「Create ServiceM8 Job」可点击链接 | 若要在邮件里看到链接则**必填** |
 | `INSPECTION_BASE_URL` | Inspection 站点根 URL（如 `https://inspection.example.com`），用于回推 `job_uuid + job_number` | 可选（不配则跳过回推） |
 | `INTERNAL_API_KEY` | 调用 Inspection 内部函数 `internalServiceJobLink` 的 API Key（通过 `x-internal-api-key` 传递） | 若启用回推则**必填** |
@@ -26,9 +27,10 @@
 
 1. 用户完成快照并提交（lead 表单或 quickcall）。
 2. `send-booking` 发邮件并在响应中返回 `servicem8: { lead_id, timestamp, sig }`（需配置 `SNAPSHOT_SIGNING_SECRET`）。
+   - `lead_id` 为加密 token（`v1.<iv>.<ciphertext>.<tag>`），不再暴露明文客户信息。
 3. `send-booking` 在邮件正文中生成「Create ServiceM8 Job」可点击链接：  
    `/.netlify/functions/createServiceM8Job?lead_id=...&timestamp=...&sig=...`
-4. 收件人从邮件点击后 `createServiceM8Job`：校验签名 → 按 email/phone 查找或创建 Company → 创建 Job 与 Note。
+4. 收件人从邮件点击后 `createServiceM8Job`：校验签名 + 有效期（默认 7 天）→ 解密 lead token → 按 email/phone 查找或创建 Company → 创建 Job 与 Note。
 5. 若配置了 `INSPECTION_BASE_URL` + `INTERNAL_API_KEY`，会把 `job_uuid + job_number` 回推给 Inspection 的 `/.netlify/functions/internalServiceJobLink`（失败仅记 warning，不阻断主流程）。
 
 ## 3. 本地测试脚本

@@ -7,6 +7,21 @@ const SITE_URL = process.env.SITE_URL || ''; // 用于邮件里的「Create Serv
 const TO_EMAIL = process.env.BOOKING_TO_EMAIL || 'info@bhtechnology.com.au';
 const FROM_EMAIL = process.env.PDF_FROM_EMAIL || 'onboarding@resend.dev';
 const FROM_NAME = process.env.PDF_FROM_NAME || 'Better Home Technology';
+const LEAD_TOKEN_VERSION = 'v1';
+
+function deriveAesKey(secret) {
+  return crypto.createHash('sha256').update(secret, 'utf8').digest();
+}
+
+function encryptLeadPayload(payload, secret) {
+  const iv = crypto.randomBytes(12);
+  const key = deriveAesKey(secret);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const plaintext = Buffer.from(JSON.stringify(payload), 'utf8');
+  const encrypted = Buffer.concat([cipher.update(plaintext), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return LEAD_TOKEN_VERSION + '.' + iv.toString('base64url') + '.' + encrypted.toString('base64url') + '.' + tag.toString('base64url');
+}
 
 function buildLeadEmailEn(payload) {
   const name = payload.name, phone = payload.phone, email = payload.email, notes = payload.notes, summary = payload.summary || '(none)';
@@ -119,7 +134,7 @@ exports.handler = async (event) => {
       notes: (type === 'lead' ? (body.notes || '') : (body.note || body.notes || '')).trim(),
       submitted_at: Date.now(),
     };
-    const leadId = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
+    const leadId = encryptLeadPayload(payload, SNAPSHOT_SIGNING_SECRET);
     const timestamp = String(Date.now());
     const sig = crypto.createHmac('sha256', SNAPSHOT_SIGNING_SECRET).update(leadId + timestamp).digest('hex');
     servicem8 = { lead_id: leadId, timestamp, sig };
