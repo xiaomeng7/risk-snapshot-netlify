@@ -1,6 +1,8 @@
 const { Resend } = require('resend');
+const crypto = require('crypto');
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const SNAPSHOT_SIGNING_SECRET = process.env.SNAPSHOT_SIGNING_SECRET;
 const TO_EMAIL = process.env.BOOKING_TO_EMAIL || 'info@bhtechnology.com.au';
 const FROM_EMAIL = process.env.PDF_FROM_EMAIL || 'onboarding@resend.dev';
 const FROM_NAME = process.env.PDF_FROM_NAME || 'Better Home Technology';
@@ -119,7 +121,29 @@ exports.handler = async (event) => {
       console.error('Resend error:', error);
       return { statusCode: 502, body: JSON.stringify({ error: error.message || 'Failed to send' }) };
     }
-    return { statusCode: 200, body: JSON.stringify({ ok: true, id: data && data.id }) };
+
+    // Optional: return signed token for "Create ServiceM8 Job" link (lead + quickcall)
+    let servicem8 = null;
+    if (SNAPSHOT_SIGNING_SECRET) {
+      const address = type === 'lead' ? (body.address || '') : (body.address || body.suburb || '');
+      const payload = {
+        name,
+        email,
+        phone,
+        address: (address || '').trim(),
+        summary: (body.summary || '').trim(),
+        notes: (type === 'lead' ? (body.notes || '') : (body.note || body.notes || '')).trim(),
+        submitted_at: Date.now(),
+      };
+      const leadId = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
+      const timestamp = String(Date.now());
+      const sig = crypto.createHmac('sha256', SNAPSHOT_SIGNING_SECRET).update(leadId + timestamp).digest('hex');
+      servicem8 = { lead_id: leadId, timestamp, sig };
+    }
+
+    const response = { ok: true, id: data && data.id };
+    if (servicem8) response.servicem8 = servicem8;
+    return { statusCode: 200, body: JSON.stringify(response) };
   } catch (err) {
     console.error(err);
     return { statusCode: 500, body: JSON.stringify({ error: err.message || 'Server error' }) };

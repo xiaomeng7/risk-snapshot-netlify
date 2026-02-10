@@ -454,6 +454,7 @@
     index: 0,     // question index within stage; intro uses -1
     answers: {},
     lead: null,
+    servicem8: null,  // { lead_id, timestamp, sig } for Create ServiceM8 Job link
     _tracked: {}  // Track events that have been sent to avoid duplicates
   };
 
@@ -1107,6 +1108,7 @@ ${payload.notes}
         });
         const data = await res.json().catch(() => ({}));
         state.lead = { name, phone, email };
+        if (data.servicem8) state.servicem8 = data.servicem8;
         track('lead_submit', { method: 'api' });
         state.stage = 5;
         state.index = 0;
@@ -1142,6 +1144,7 @@ ${payload.notes}
       <div class="ctaRow">
         <button class="ghost" id="restartBtn">Start again</button>
         <a class="cta" href="mailto:${CONTACT_EMAIL}">Contact us</a>
+        <a class="cta ghost" id="createServiceM8Btn" href="#" style="display:none">Create ServiceM8 Job</a>
       </div>
 
       <div class="small" style="margin-top:10px;">
@@ -1155,6 +1158,13 @@ ${payload.notes}
     `;
 
     el.querySelector("#restartBtn").addEventListener("click", () => restart());
+    const sm8Btn = el.querySelector("#createServiceM8Btn");
+    if (sm8Btn && state.servicem8 && state.servicem8.lead_id && state.servicem8.timestamp && state.servicem8.sig) {
+      sm8Btn.style.display = "inline-flex";
+      sm8Btn.href = "/.netlify/functions/createServiceM8Job?lead_id=" + encodeURIComponent(state.servicem8.lead_id) + "&timestamp=" + encodeURIComponent(state.servicem8.timestamp) + "&sig=" + encodeURIComponent(state.servicem8.sig);
+      sm8Btn.target = "_blank";
+      sm8Btn.rel = "noopener";
+    }
     return el;
   }
 
@@ -1223,6 +1233,7 @@ ${payload.notes}
     state.index = 0;
     state.answers = {};
     state.lead = null;
+    state.servicem8 = null;
     state.draftMailto = null;
     state._tracked = {};
     computeProgress();
