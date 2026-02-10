@@ -42,6 +42,12 @@ npx ts-node scripts/test-servicem8-create-job.ts
 
 脚本会使用 mock 的 lead  payload 调用 `createServiceM8Job`（POST），并打印返回的 `company_uuid` / `job_uuid` 或错误信息。
 
+## 5. 字段说明（若后台仍看不到）
+
+- **Company**：创建/更新时传 `name`、`email`、`phone`、`address` / `address_1`。若你处地址字段名不同，需对照 [ServiceM8 Company API](https://developer.servicem8.com/reference/createclients) 调整。
+- **Job**：`job_description` 为简短描述；详细内容同时写入 `notes` 与 `job_notes`（按你账号接受的字段保留其一即可）。
+- **Contact**：先创建 Company Contact（`companycontact`），再创建 Job Contact（`jobcontact`）并关联 `company_contact_uuid`；若 Job Contact 仅支持直接填 name/email/phone 或 mobile，代码中也有 fallback。
+
 ## 4. 日志（不记录敏感信息）
 
 - 会记录：request id、lead_id 前缀、created/reused company_uuid、created job_uuid。

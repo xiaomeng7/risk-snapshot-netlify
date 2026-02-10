@@ -138,7 +138,11 @@ async function createCompany(payload: SnapshotPayload): Promise<string> {
     email: payload.email,
     phone: payload.phone,
   };
-  if ((payload.address || "").trim()) body.address = (payload.address || "").trim();
+  const addr = (payload.address || "").trim();
+  if (addr) {
+    body.address = addr;
+    body.address_1 = addr;
+  }
   const res = await servicem8Fetch("company.json", {
     method: "POST",
     body: JSON.stringify(body),
@@ -154,27 +158,43 @@ async function createCompany(payload: SnapshotPayload): Promise<string> {
   throw new Error("ServiceM8 company creation did not return uuid");
 }
 
-/** Create or update company contact (primary contact for company). */
-async function upsertCompanyContact(companyUuid: string, payload: SnapshotPayload): Promise<void> {
-  // ServiceM8 may use jobcontact for job-level contact; company contact might be embedded.
-  // If your API has a separate company_contact endpoint, call it here.
-  // For now we ensure company has name/email/phone; no separate contact endpoint assumed.
+/** Update company with contact + address (reused companies get latest details). */
+async function updateCompanyDetails(companyUuid: string, payload: SnapshotPayload): Promise<void> {
   try {
-    const res = await servicem8Fetch(`company/${companyUuid}.json`);
-    if (!res.ok) return;
-    const company = (await res.json()) as Record<string, unknown>;
-    if (company.email === payload.email && company.phone === payload.phone) return;
-    await servicem8Fetch(`company/${companyUuid}.json`, {
-      method: "POST",
-      body: JSON.stringify({
-        uuid: companyUuid,
-        name: payload.name,
-        email: payload.email,
-        phone: payload.phone,
-      }),
-    });
+    const body: Record<string, string> = {
+      uuid: companyUuid,
+      name: payload.name,
+      email: payload.email,
+      phone: payload.phone,
+    };
+    const addr = (payload.address || "").trim();
+    if (addr) {
+      body.address = addr;
+      body.address_1 = addr;
+    }
+    await servicem8Fetch(`company/${companyUuid}.json`, { method: "POST", body: JSON.stringify(body) });
   } catch {
-    // Non-fatal: job can still be created
+    // Non-fatal
+  }
+}
+
+/** Create company contact (name, email, phone). Returns company_contact_uuid or null. */
+async function createCompanyContact(companyUuid: string, payload: SnapshotPayload): Promise<string | null> {
+  try {
+    const body: Record<string, string> = {
+      company_uuid: companyUuid,
+      name: payload.name,
+      email: payload.email,
+      phone: payload.phone,
+    };
+    const res = await servicem8Fetch("companycontact.json", { method: "POST", body: JSON.stringify(body) });
+    if (!res.ok) return null;
+    const uuid = res.headers.get("x-record-uuid");
+    if (uuid) return uuid;
+    const data = (await res.json()) as { uuid?: string };
+    return data?.uuid ?? null;
+  } catch {
+    return null;
   }
 }
 
@@ -205,7 +225,10 @@ async function createJob(companyUuid: string, payload: SnapshotPayload): Promise
     job_description: JOB_DESCRIPTION,
     status: JOB_STATUS,
   };
-  if (jobNotes) body.notes = jobNotes;
+  if (jobNotes) {
+    body.notes = jobNotes;
+    body.job_notes = jobNotes;
+  }
 
   const res = await servicem8Fetch("job.json", {
     method: "POST",
@@ -224,19 +247,24 @@ async function createJob(companyUuid: string, payload: SnapshotPayload): Promise
   throw new Error("ServiceM8 job creation did not return uuid");
 }
 
-/** Create job contact (contact name, email, phone on the job). Non-fatal if API differs. */
-async function createJobContact(jobUuid: string, payload: SnapshotPayload): Promise<void> {
+/** Create job contact: link job to company contact, or create with name/email/phone. */
+async function createJobContact(
+  jobUuid: string,
+  companyUuid: string,
+  payload: SnapshotPayload,
+  companyContactUuid: string | null
+): Promise<void> {
   try {
-    const body = {
-      job_uuid: jobUuid,
-      name: payload.name,
-      email: payload.email,
-      phone: payload.phone,
-    };
-    const res = await servicem8Fetch("jobcontact.json", {
-      method: "POST",
-      body: JSON.stringify(body),
-    });
+    const body: Record<string, string> = { job_uuid: jobUuid };
+    if (companyContactUuid) {
+      body.company_contact_uuid = companyContactUuid;
+    } else {
+      body.name = payload.name;
+      body.email = payload.email;
+      body.phone = payload.phone;
+      body.mobile = payload.phone;
+    }
+    const res = await servicem8Fetch("jobcontact.json", { method: "POST", body: JSON.stringify(body) });
     if (!res.ok) {
       const text = await res.text();
       console.warn("ServiceM8 create job contact failed (non-fatal):", res.status, text);
@@ -363,12 +391,14 @@ export const handler = async (event: NetlifyEvent): Promise<{ statusCode: number
       }
     }
 
-    await upsertCompanyContact(companyUuid, payload);
+    await updateCompanyDetails(companyUuid, payload);
+
+    const companyContactUuid = await createCompanyContact(companyUuid, payload);
 
     jobUuid = await createJob(companyUuid, payload);
     log("job created", { job_uuid: jobUuid });
 
-    await createJobContact(jobUuid, payload);
+    await createJobContact(jobUuid, companyUuid, payload, companyContactUuid);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     log("error", { error: message });
