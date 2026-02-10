@@ -21,8 +21,10 @@ interface NetlifyEvent {
 const SERVICEM8_API_KEY = process.env.SERVICEM8_API_KEY;
 const SERVICEM8_BASE_URL = process.env.SERVICEM8_BASE_URL || "https://api.servicem8.com/api_1.0";
 const SNAPSHOT_SIGNING_SECRET = process.env.SNAPSHOT_SIGNING_SECRET;
-/** ServiceM8 创建工单时的必填状态，需与账号内 Job Status 一致，如 Quote / Job Request / Work Order */
+/** ServiceM8 创建工单时的必填状态，需与账号内 Job Status 一致 */
 const JOB_STATUS = process.env.SERVICEM8_JOB_STATUS || "Quote";
+/** Job 的简短描述，详细内容在 notes 里 */
+const JOB_DESCRIPTION = process.env.SERVICEM8_JOB_DESCRIPTION || "Whole house electric health check";
 
 /** Snapshot submission payload (encoded as lead_id or in body). */
 interface SnapshotPayload {
@@ -131,11 +133,12 @@ async function findCompanyByName(name: string): Promise<string | null> {
 
 /** Create a new company. Returns uuid. Throws on error. */
 async function createCompany(payload: SnapshotPayload): Promise<string> {
-  const body = {
+  const body: Record<string, string> = {
     name: payload.name,
     email: payload.email,
     phone: payload.phone,
   };
+  if ((payload.address || "").trim()) body.address = (payload.address || "").trim();
   const res = await servicem8Fetch("company.json", {
     method: "POST",
     body: JSON.stringify(body),
@@ -175,7 +178,7 @@ async function upsertCompanyContact(companyUuid: string, payload: SnapshotPayloa
   }
 }
 
-/** Create job with company_uuid, job_address, job_description. */
+/** Create job: short job_description, long content in notes. */
 async function createJob(companyUuid: string, payload: SnapshotPayload): Promise<string> {
   const submittedAt =
     payload.submitted_at != null
@@ -184,7 +187,7 @@ async function createJob(companyUuid: string, payload: SnapshotPayload): Promise
         : String(payload.submitted_at)
       : new Date().toISOString();
 
-  const parts: string[] = [
+  const noteParts: string[] = [
     "Source: Snapshot",
     `Submission: ${submittedAt}`,
     payload.risk_band ? `Risk/Result: ${payload.risk_band}` : "",
@@ -193,16 +196,16 @@ async function createJob(companyUuid: string, payload: SnapshotPayload): Promise
     payload.notes ? `Notes: ${payload.notes}` : "",
     payload.review_url ? `Review: ${payload.review_url}` : "",
   ].filter(Boolean);
-
-  const jobDescription = parts.join("\n");
+  const jobNotes = noteParts.join("\n");
   const jobAddress = (payload.address || "").trim() || "Address not provided";
 
-  const body = {
+  const body: Record<string, string> = {
     company_uuid: companyUuid,
     job_address: jobAddress,
-    job_description: jobDescription,
+    job_description: JOB_DESCRIPTION,
     status: JOB_STATUS,
   };
+  if (jobNotes) body.notes = jobNotes;
 
   const res = await servicem8Fetch("job.json", {
     method: "POST",
@@ -219,6 +222,28 @@ async function createJob(companyUuid: string, payload: SnapshotPayload): Promise
   const data = (await res.json()) as { uuid?: string };
   if (data?.uuid) return data.uuid;
   throw new Error("ServiceM8 job creation did not return uuid");
+}
+
+/** Create job contact (contact name, email, phone on the job). Non-fatal if API differs. */
+async function createJobContact(jobUuid: string, payload: SnapshotPayload): Promise<void> {
+  try {
+    const body = {
+      job_uuid: jobUuid,
+      name: payload.name,
+      email: payload.email,
+      phone: payload.phone,
+    };
+    const res = await servicem8Fetch("jobcontact.json", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      console.warn("ServiceM8 create job contact failed (non-fatal):", res.status, text);
+    }
+  } catch (e) {
+    console.warn("ServiceM8 create job contact error (non-fatal):", e);
+  }
 }
 
 function htmlPage(title: string, body: string, isError: boolean): string {
@@ -342,6 +367,8 @@ export const handler = async (event: NetlifyEvent): Promise<{ statusCode: number
 
     jobUuid = await createJob(companyUuid, payload);
     log("job created", { job_uuid: jobUuid });
+
+    await createJobContact(jobUuid, payload);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     log("error", { error: message });
