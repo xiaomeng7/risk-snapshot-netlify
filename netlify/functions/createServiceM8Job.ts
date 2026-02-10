@@ -327,6 +327,7 @@ export const handler = async (event: NetlifyEvent): Promise<{ statusCode: number
         true
       );
       return { statusCode: 502, headers: { "Content-Type": "text/html; charset=utf-8" }, body: html };
+    }
     return { statusCode: 502, headers: { "Content-Type": "application/json" }, body };
   }
 
