@@ -21,6 +21,8 @@ interface NetlifyEvent {
 const SERVICEM8_API_KEY = process.env.SERVICEM8_API_KEY;
 const SERVICEM8_BASE_URL = process.env.SERVICEM8_BASE_URL || "https://api.servicem8.com/api_1.0";
 const SNAPSHOT_SIGNING_SECRET = process.env.SNAPSHOT_SIGNING_SECRET;
+/** ServiceM8 创建工单时的必填状态，需与账号内 Job Status 一致，如 Quote / Job Request / Work Order */
+const JOB_STATUS = process.env.SERVICEM8_JOB_STATUS || "Quote";
 
 /** Snapshot submission payload (encoded as lead_id or in body). */
 interface SnapshotPayload {
@@ -183,6 +185,7 @@ async function createJob(companyUuid: string, payload: SnapshotPayload): Promise
     company_uuid: companyUuid,
     job_address: jobAddress,
     job_description: jobDescription,
+    status: JOB_STATUS,
   };
 
   const res = await servicem8Fetch("job.json", {

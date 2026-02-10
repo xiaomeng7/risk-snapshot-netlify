@@ -10,6 +10,7 @@
 |------|------|------|
 | `SERVICEM8_API_KEY` | ServiceM8 Private Application API Key（发请求时放在 `X-API-Key` header） | 创建工单时**是** |
 | `SERVICEM8_BASE_URL` | API 根地址，默认 `https://api.servicem8.com/api_1.0` | 否 |
+| `SERVICEM8_JOB_STATUS` | 创建工单时的**必填** Job Status，需与 ServiceM8 账号内状态名称一致（如 `Quote`、`Job Request`、`Work Order`），默认 `Quote` | 若 400 报错 “Job Status is mandatory” 请设此项 |
 | `SNAPSHOT_SIGNING_SECRET` | 用于对 lead_id + timestamp 做 HMAC 签名的密钥；与生成「Create ServiceM8 Job」链接的 send-booking 共用 | **是**（若要用该链接） |
 | `SITE_URL` | 站点根 URL（如 `https://yoursite.netlify.app`），用于在**邮件正文**里生成「Create ServiceM8 Job」可点击链接；不设则邮件里不会出现该链接（仅成功页仍有按钮） | 若要在邮件里看到链接则**必填** |
 
