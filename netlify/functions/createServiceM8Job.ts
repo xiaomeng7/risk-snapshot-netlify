@@ -113,7 +113,23 @@ async function findCompanyByEmailOrPhone(email: string, phone: string): Promise<
   return null;
 }
 
-/** Create a new company. Returns uuid. */
+/** Find company by name (ServiceM8 要求 Name 唯一，同名则复用). */
+async function findCompanyByName(name: string): Promise<string | null> {
+  if (!name || name.length > 250) return null;
+  try {
+    const safe = name.replace(/'/g, "''");
+    const q = `?$filter=name eq '${safe}'`;
+    const res = await servicem8Fetch(`company.json${q}`);
+    if (!res.ok) return null;
+    const list = (await res.json()) as Array<{ uuid?: string }>;
+    if (Array.isArray(list) && list.length > 0 && list[0].uuid) return list[0].uuid;
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+/** Create a new company. Returns uuid. Throws on error. */
 async function createCompany(payload: SnapshotPayload): Promise<string> {
   const body = {
     name: payload.name,
@@ -305,14 +321,21 @@ export const handler = async (event: NetlifyEvent): Promise<{ statusCode: number
   let companyReused = false;
 
   try {
-    const existing = await findCompanyByEmailOrPhone(payload.email, payload.phone);
+    let existing = await findCompanyByEmailOrPhone(payload.email, payload.phone);
     if (existing) {
       companyUuid = existing;
       companyReused = true;
-      log("company reused", { company_uuid: companyUuid });
+      log("company reused (email/phone)", { company_uuid: companyUuid });
     } else {
-      companyUuid = await createCompany(payload);
-      log("company created", { company_uuid: companyUuid });
+      existing = await findCompanyByName(payload.name);
+      if (existing) {
+        companyUuid = existing;
+        companyReused = true;
+        log("company reused (name)", { company_uuid: companyUuid });
+      } else {
+        companyUuid = await createCompany(payload);
+        log("company created", { company_uuid: companyUuid });
+      }
     }
 
     await upsertCompanyContact(companyUuid, payload);
