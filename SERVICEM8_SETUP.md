@@ -18,7 +18,7 @@
 | `SERVICEM8_LINK_MAX_AGE_SECONDS` | 链接有效期秒数，默认 `604800`（7天） | 可选 |
 | `SITE_URL` | 站点根 URL（如 `https://yoursite.netlify.app`），用于在**邮件正文**里生成「Create ServiceM8 Job」可点击链接 | 若要在邮件里看到链接则**必填** |
 | `INSPECTION_BASE_URL` | Inspection 站点根 URL（如 `https://inspection.example.com`），用于回推 `job_uuid + job_number` | 可选（不配则跳过回推） |
-| `INTERNAL_API_KEY` | 调用 Inspection 内部函数 `internalServiceJobLink` 的 API Key（通过 `x-internal-api-key` 传递） | 若启用回推则**必填** |
+| `INTERNAL_API_KEY` | 调用 Inspection 内部端点 `/api/internal/service-job-link` 的 API Key（通过 `x-internal-api-key` 传递） | 若启用回推则**必填** |
 
 - 密钥只放在环境变量中，不要写进代码或仓库。
 - `SNAPSHOT_SIGNING_SECRET` 需与 `send-booking` 中生成签名时使用的值一致（同一次部署内由 Netlify 注入）。
@@ -31,7 +31,7 @@
 3. `send-booking` 在邮件正文中生成「Create ServiceM8 Job」可点击链接：  
    `/.netlify/functions/createServiceM8Job?lead_id=...&timestamp=...&sig=...`
 4. 收件人从邮件点击后 `createServiceM8Job`：校验签名 + 有效期（默认 7 天）→ 解密 lead token → 按 email/phone 查找或创建 Company → 创建 Job 与 Note。
-5. 若配置了 `INSPECTION_BASE_URL` + `INTERNAL_API_KEY`，会把 `job_uuid + job_number` 回推给 Inspection 的 `/.netlify/functions/internalServiceJobLink`（失败仅记 warning，不阻断主流程）。
+5. 若配置了 `INSPECTION_BASE_URL` + `INTERNAL_API_KEY`，会把 `job_uuid + job_number` 回推给 Inspection 的 `/api/internal/service-job-link`（失败仅记 warning，不阻断主流程）。
 
 ## 3. 本地测试脚本
 

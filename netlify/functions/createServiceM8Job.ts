@@ -440,7 +440,7 @@ async function pushServiceJobLinkToInspection(
     return { ok: false, warning };
   }
   try {
-    const url = INSPECTION_BASE_URL.replace(/\/$/, "") + "/.netlify/functions/internalServiceJobLink";
+    const url = INSPECTION_BASE_URL.replace(/\/$/, "") + "/api/internal/service-job-link";
     const res = await fetch(url, {
       method: "POST",
       headers: {

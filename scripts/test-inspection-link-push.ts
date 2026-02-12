@@ -18,7 +18,7 @@ async function main() {
     process.exit(1);
   }
 
-  const url = baseUrl.replace(/\/$/, "") + "/.netlify/functions/internalServiceJobLink";
+  const url = baseUrl.replace(/\/$/, "") + "/api/internal/service-job-link";
   const payload = { job_uuid: jobUuid, job_number: jobNumber, source: "snapshot" };
 
   console.log("POST", url);
