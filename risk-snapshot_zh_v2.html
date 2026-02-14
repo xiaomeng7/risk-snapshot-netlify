@@ -125,20 +125,22 @@
     .accordion-content{padding:0 14px 12px;font-size:14px;color:var(--muted);display:none;}
     .accordion-content.open{display:block;}
     .step-progress{margin-bottom:12px;font-size:13px;color:var(--muted);}
+    .share-btn{padding:10px 20px;background:rgba(255,255,255,0.2);color:white;border:2px solid white;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;transition:all .3s ease;}
+    .share-btn:hover{background:white;color:#667eea;transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.2);}
+    @keyframes toastSlideIn{from{opacity:0;transform:translateX(100px);}to{opacity:1;transform:translateX(0);}}
+    @keyframes toastSlideOut{from{opacity:1;transform:translateX(0);}to{opacity:0;transform:translateX(100px);}}
   </style>
 
   <!-- ✅ GA4：你可以保留同一个 Measurement ID，不需要为中文单独换。
        只要你在微信转发链接里加 UTM（utm_source=wechat...），GA4 就能识别来源。
        如果你已有 GA4 代码，请把下面这段替换成你现有的（保持一致即可）。 -->
-  <!--
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-QBYBDVL5FT"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-    gtag('config', 'G-XXXXXXXXXX');
+    gtag('config', 'G-QBYBDVL5FT');
   </script>
-  -->
 </head>
 
 <body>
@@ -271,6 +273,8 @@
         <a href="mailto:info@bhtechnology.com.au">info@bhtechnology.com.au</a>
       </div>
 
+      <div id="shareSectionZh" class="share-section-zh"></div>
+
       <div class="divider"></div>
 
       <div class="small mono" id="debugLine" style="display:none" aria-hidden="true"></div>
@@ -368,6 +372,20 @@
   const utm_campaign = getParam("utm_campaign");
   const utm = [utm_source, utm_medium, utm_campaign].filter(Boolean).join(" / ");
   document.getElementById("utmPill").textContent = utm ? ("来源标记：" + utm) : "来源：未标记（建议微信链接加 ?utm_source=wechat&utm_medium=social&utm_campaign=pm_cn）";
+
+  // ---------- 推荐来源 ?ref= 检测 ----------
+  (function(){
+    const referrerID = getParam("ref");
+    if(referrerID){
+      try{ localStorage.setItem("referredBy", referrerID); } catch(e){}
+      if(typeof gtag !== "undefined") gtag("event", "referral_visit", { referrer_id: referrerID });
+      const banner = document.createElement("div");
+      banner.id = "referralBannerZh";
+      banner.innerHTML = '<div style="background:linear-gradient(90deg,#667eea 0%,#764ba2 100%);color:white;padding:12px 20px;text-align:center;font-size:14px;">您是通过朋友推荐来的！完成此检查，您和推荐人各得<strong>$30优惠码</strong>。</div>';
+      document.body.insertBefore(banner, document.body.firstChild);
+    }
+    if(typeof gtag !== "undefined") gtag("event", "page_open", { page: "risk_snapshot_zh", referred_by: localStorage.getItem("referredBy") || "direct" });
+  })();
 
   // ---------- Step 0: 价值引导 ----------
   const INSIGHT_GENERIC_ZH = "提示：如果您在做决定时经常需要“别人给您一个确定答案”，通常意味着缺少可验证的证据与优先级框架。";
@@ -582,6 +600,105 @@
     return s; // 0-10-ish
   }
 
+  function getRiskLevelZh(){
+    const s = score();
+    if(s <= 2) return "green";
+    if(s <= 6) return "yellow";
+    return "red";
+  }
+
+  function generateReferralIDZh(){
+    const nameEl = document.getElementById("name");
+    const phoneEl = document.getElementById("phone");
+    const name = (nameEl && nameEl.value) ? nameEl.value.trim() : "";
+    const phone = (phoneEl && phoneEl.value) ? phoneEl.value.trim() : "";
+    if(name && phone){
+      const initial = name.charAt(0).toUpperCase();
+      const last4 = phone.replace(/\D/g, "").slice(-4) || "0000";
+      const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+      return initial + last4 + random;
+    }
+    return "REF" + Math.random().toString(36).substring(2, 8).toUpperCase();
+  }
+
+  function getReferralLinkZh(){
+    const rid = generateReferralIDZh();
+    return window.location.origin + window.location.pathname + "?ref=" + rid;
+  }
+
+  function showToastZh(msg){
+    const existing = document.querySelector(".referral-toast-zh");
+    if(existing) existing.remove();
+    const toast = document.createElement("div");
+    toast.className = "referral-toast-zh";
+    toast.textContent = msg;
+    toast.style.cssText = "position:fixed;top:20px;right:20px;background:#10b981;color:white;padding:15px 25px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.3);z-index:99999;animation:toastSlideIn .3s ease;";
+    document.body.appendChild(toast);
+    setTimeout(function(){
+      toast.style.animation = "toastSlideOut .3s ease forwards";
+      setTimeout(function(){ toast.remove(); }, 300);
+    }, 3000);
+  }
+
+  function copyReferralLinkZh(){
+    const input = document.getElementById("referralLinkInputZh");
+    if(!input) return;
+    input.select();
+    input.setSelectionRange(0, 99999);
+    try{ navigator.clipboard.writeText(input.value); }
+    catch(e){ document.execCommand("copy"); }
+    showToastZh("链接已复制！分享给朋友吧");
+    if(typeof gtag !== "undefined") gtag("event", "referral_link_copied", { user_id: (input.value.split("ref=")[1] || "").split("&")[0] || "", risk_level: getRiskLevelZh() });
+  }
+
+  function shareViaEmailZh(){
+    const input = document.getElementById("referralLinkInputZh");
+    const link = input ? input.value : getReferralLinkZh();
+    const subject = encodeURIComponent("免费投资房电气风险自测");
+    const body = encodeURIComponent("你好，\n\n我用了 Better Home 的免费电气风险快照工具，3分钟就能知道投资房有没有风险。\n\n你也试试：" + link + "\n\n完成检查还能各得$30优惠码~\n\nCheers");
+    window.open("mailto:?subject=" + subject + "&body=" + body);
+    if(typeof gtag !== "undefined") gtag("event", "share_button_clicked", { platform: "email", user_id: generateReferralIDZh() });
+  }
+
+  function shareViaWhatsAppZh(){
+    const input = document.getElementById("referralLinkInputZh");
+    const link = input ? input.value : getReferralLinkZh();
+    const text = encodeURIComponent("刚做了投资房免费电气安全检查，发现有些问题！\n\n你也检查一下（3分钟）：" + link + "\n\n完成还能各得$30优惠~");
+    window.open("https://wa.me/?text=" + text);
+    if(typeof gtag !== "undefined") gtag("event", "share_button_clicked", { platform: "whatsapp", user_id: generateReferralIDZh() });
+  }
+
+  function shareViaFacebookZh(){
+    const input = document.getElementById("referralLinkInputZh");
+    const link = input ? input.value : getReferralLinkZh();
+    window.open("https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(link));
+    if(typeof gtag !== "undefined") gtag("event", "share_button_clicked", { platform: "facebook", user_id: generateReferralIDZh() });
+  }
+
+  function shareViaWeChatZh(){
+    const input = document.getElementById("referralLinkInputZh");
+    const link = input ? input.value : getReferralLinkZh();
+    const wechatText = "刚用了Better Home的免费电气安全检查工具，3分钟就知道我家投资房哪里有风险！\n\n你也试试：" + link + "\n\n完成检查还能各得$30优惠码~";
+    try{ navigator.clipboard.writeText(wechatText); }
+    catch(e){ document.execCommand("copy"); }
+    showToastZh("文案已复制！打开微信粘贴发送给朋友");
+    if(typeof gtag !== "undefined") gtag("event", "share_button_clicked", { platform: "wechat", user_id: generateReferralIDZh() });
+  }
+
+  function renderShareSectionZh(){
+    const level = getRiskLevelZh();
+    const link = getReferralLinkZh();
+    const shareLinkHtml = '<div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);border-radius:12px;padding:15px;margin-bottom:20px;"><p style="color:white;font-size:14px;margin:0 0 8px 0;">您的推荐链接：</p><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;"><input type="text" id="referralLinkInputZh" value="' + link + '" readonly style="flex:1;min-width:180px;padding:10px;border-radius:8px;border:none;font-size:14px;" /><button onclick="copyReferralLinkZh()" style="padding:10px 20px;background:white;color:#667eea;border:none;border-radius:8px;cursor:pointer;font-weight:600;">复制</button></div></div>';
+    const shareBtns = '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;"><button onclick="shareViaEmailZh()" class="share-btn">邮件分享</button><button onclick="shareViaWhatsAppZh()" class="share-btn">WhatsApp</button><button onclick="shareViaFacebookZh()" class="share-btn">Facebook</button><button onclick="shareViaWeChatZh()" class="share-btn">微信</button></div>';
+    if(level === "green"){
+      return '<div style="margin-top:30px;padding:20px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:16px;text-align:center;"><h3 style="color:white;margin:0 0 10px 0;">太棒了！您的投资房电路健康状况良好！</h3><p style="color:rgba(255,255,255,0.9);margin:0 0 20px 0;">帮朋友也检查一下！<br><strong>分享给3位朋友，您和他们各得$50优惠码</strong></p>' + shareLinkHtml + shareBtns + '<p style="color:rgba(255,255,255,0.8);font-size:13px;margin:15px 0 0 0;">当3位朋友完成快照后，我们将邮件发送<strong>$50优惠码</strong>（Essential Check $795）</p></div>';
+    }
+    if(level === "yellow"){
+      return '<div style="margin-top:30px;padding:20px;background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);border-radius:16px;text-align:center;"><h3 style="color:white;margin:0 0 10px 0;">发现2项需要关注的问题 - 立即预约专业检查</h3><p style="color:rgba(255,255,255,0.9);margin:0 0 15px 0;">现在预约省$50，或推荐3位朋友解锁$100优惠！</p>' + shareLinkHtml + shareBtns + '<div style="display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap;"><button onclick="openModal()" style="padding:12px 30px;background:white;color:#f5576c;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:16px;">立即预约</button><button onclick="shareViaWhatsAppZh()" style="padding:12px 30px;background:rgba(255,255,255,0.2);color:white;border:2px solid white;border-radius:8px;cursor:pointer;font-weight:600;">分享省钱</button></div></div>';
+    }
+    return '<div style="margin-top:30px;padding:20px;background:linear-gradient(135deg,#ff0844 0%,#ffb199 100%);border-radius:16px;text-align:center;box-shadow:0 0 30px rgba(255,8,68,0.3);"><h3 style="color:white;margin:0 0 10px 0;font-size:22px;">紧急！发现5项高风险问题</h3><p style="color:white;margin:0 0 15px 0;font-size:16px;font-weight:600;">建议48小时内预约检查</p><p style="color:rgba(255,255,255,0.9);margin:0 0 20px 0;">您的朋友可能也有同样风险！<br>帮助他们检查，双方各得$50优惠</p>' + shareLinkHtml + shareBtns + '<div style="display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap;"><button onclick="openModal()" style="padding:14px 35px;background:white;color:#ff0844;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:18px;">立即致电</button><button onclick="shareViaWhatsAppZh()" style="padding:14px 30px;background:rgba(255,255,255,0.2);color:white;border:2px solid white;border-radius:8px;cursor:pointer;font-weight:600;">提醒朋友</button></div></div>';
+  }
+
   function showResult(){
     const s = score();
     const resultText = document.getElementById("resultText");
@@ -619,6 +736,19 @@
 
     // Update mailto link with prefilled content
     updateMailto();
+
+    // 渲染推荐分享区域
+    const shareEl = document.getElementById("shareSectionZh");
+    if(shareEl) shareEl.innerHTML = renderShareSectionZh();
+
+    // 推荐链接随姓名/电话更新
+    const nameEl = document.getElementById("name");
+    const phoneEl = document.getElementById("phone");
+    function updRef(){ const inp = document.getElementById("referralLinkInputZh"); if(inp){ const rid = generateReferralIDZh(); inp.value = window.location.origin + window.location.pathname + "?ref=" + rid; } }
+    if(nameEl) nameEl.addEventListener("input", updRef);
+    if(phoneEl) phoneEl.addEventListener("input", updRef);
+
+    if(typeof gtag !== "undefined") gtag("event", "snapshot_completed", { risk_level: getRiskLevelZh(), referred_by: localStorage.getItem("referredBy") || "direct" });
 
     showStep(3);
   }
@@ -721,6 +851,7 @@
           summary: buildAnswerSummaryZh(),
           utm: utm || "",
           page: window.location.href,
+          referredBy: localStorage.getItem("referredBy") || "direct",
         }),
       });
       const data = await res.json().catch(() => ({}));

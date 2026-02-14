@@ -314,6 +314,32 @@
       .modalOverlay{ background: rgba(17,24,39,.35); }
     }
 
+    .share-btn {
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: 2px solid white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+    .share-btn:hover {
+      background: white;
+      color: #667eea;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    @keyframes toastSlideIn {
+      from { opacity: 0; transform: translateX(100px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes toastSlideOut {
+      from { opacity: 1; transform: translateX(0); }
+      to { opacity: 0; transform: translateX(100px); }
+    }
+
   </style>
 </head>
 <body>
@@ -512,16 +538,26 @@
 
 
   // Modal helpers
+  function updateReferralLinkFromForm(){
+    const inp = document.getElementById("referralLinkInput");
+    if (!inp) return;
+    const rid = generateReferralID();
+    const base = window.location.origin + window.location.pathname;
+    inp.value = base + "?ref=" + rid;
+  }
+
   function openCallModal(){
     const m = $("callModal");
     if (!m) return;
     m.classList.add("open");
-    // Force inline display so it stays hidden even if a builder strips/overrides CSS
     m.style.display = "flex";
     document.body.style.overflow = "hidden";
     prefillQuickCallFromLead();
-    // Track quick call modal open
-    track('quick_call_open');
+    track("quick_call_open");
+    var qcName = document.getElementById("qc_name");
+    var qcPhone = document.getElementById("qc_phone");
+    if (qcName && !qcName._refListener) { qcName._refListener = true; qcName.addEventListener("input", updateReferralLinkFromForm); qcName.addEventListener("change", updateReferralLinkFromForm); }
+    if (qcPhone && !qcPhone._refListener) { qcPhone._refListener = true; qcPhone.addEventListener("input", updateReferralLinkFromForm); qcPhone.addEventListener("change", updateReferralLinkFromForm); }
   }
   function closeCallModal(){
     const m = $("callModal");
@@ -616,20 +652,121 @@ ${payload.notes}
   }
 
   function snapshotUncertaintyFlag(){
+    return computeSnapshotScore() >= 2;
+  }
+
+  function computeSnapshotScore(){
     const a1 = state.answers["snap_1"];
     const a2 = state.answers["snap_2"];
     const a4 = state.answers["snap_4"];
     const a5 = state.answers["snap_5"];
     const a6 = state.answers["snap_6"];
-
     let score = 0;
-    if (a1 && a1 !== "I’m generally confident making these decisions") score += 1;
+    if (a1 && a1.indexOf("generally confident") === -1) score += 1;
     if (a2 && a2 !== "No") score += 1;
     if (a4 && a4 !== "Yes") score += 1;
     if (a5 && a5 === "As little as possible") score += 1;
     if (a6 && a6 === "I prefer planning ahead, even if nothing is urgent") score += 1;
+    return score;
+  }
 
-    return score >= 2;
+  function getRiskLevel(){
+    const s = computeSnapshotScore();
+    if (s <= 1) return "green";
+    if (s <= 3) return "yellow";
+    return "red";
+  }
+
+  function generateReferralID(){
+    const nameEl = document.getElementById("qc_name") || document.getElementById("name");
+    const phoneEl = document.getElementById("qc_phone") || document.getElementById("phone");
+    const name = (state.lead && state.lead.name) || (nameEl && nameEl.value) || "";
+    const phone = (state.lead && state.lead.phone) || (phoneEl && phoneEl.value) || "";
+    if (name && phone) {
+      const initial = name.trim().charAt(0).toUpperCase();
+      const last4 = phone.replace(/\D/g, "").slice(-4) || "0000";
+      const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+      return initial + last4 + random;
+    }
+    return "REF" + Math.random().toString(36).substring(2, 8).toUpperCase();
+  }
+
+  function getReferralLink(){
+    const rid = generateReferralID();
+    return window.location.origin + window.location.pathname + "?ref=" + rid;
+  }
+
+  function showToast(message){
+    const existing = document.querySelector(".referral-toast");
+    if (existing) existing.remove();
+    const toast = document.createElement("div");
+    toast.className = "referral-toast";
+    toast.textContent = message;
+    toast.style.cssText = "position:fixed;top:20px;right:20px;background:#10b981;color:white;padding:15px 25px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.3);z-index:99999;animation:toastSlideIn .3s ease;";
+    document.body.appendChild(toast);
+    setTimeout(function(){
+      toast.style.animation = "toastSlideOut .3s ease forwards";
+      setTimeout(function(){ toast.remove(); }, 300);
+    }, 3000);
+  }
+
+  function copyReferralLink(){
+    const input = document.getElementById("referralLinkInput");
+    if (!input) return;
+    input.select();
+    input.setSelectionRange(0, 99999);
+    try {
+      navigator.clipboard.writeText(input.value);
+      showToast("Link copied! Share it with your friends");
+    } catch (e) {
+      document.execCommand("copy");
+      showToast("Link copied! Share it with your friends");
+    }
+    track("referral_link_copied", { user_id: (input.value.split("ref=")[1] || "").split("&")[0] || "", risk_level: getRiskLevel() });
+  }
+
+  function shareViaEmail(){
+    const input = document.getElementById("referralLinkInput");
+    const link = input ? input.value : getReferralLink();
+    const subject = encodeURIComponent("Free Electrical Risk Check for Your Investment Property");
+    const body = encodeURIComponent(
+      "Hi there,\n\n" +
+      "I just used Better Home's free Electrical Risk Snapshot tool - it only takes 3 minutes to find out if your investment property has any electrical safety issues.\n\n" +
+      "You should try it too: " + link + "\n\n" +
+      "P.S. When you complete it, we both get $30 OFF on professional electrical checks!\n\n" +
+      "Cheers"
+    );
+    window.open("mailto:?subject=" + subject + "&body=" + body);
+    track("share_button_clicked", { platform: "email", user_id: generateReferralID() });
+  }
+
+  function shareViaWhatsApp(){
+    const input = document.getElementById("referralLinkInput");
+    const link = input ? input.value : getReferralLink();
+    const text = encodeURIComponent(
+      "Just did a free electrical safety check for my investment property - found out I have some issues!\n\n" +
+      "You should check yours too (3 mins): " + link + "\n\n" +
+      "Complete it and we both get $30 OFF"
+    );
+    window.open("https://wa.me/?text=" + text);
+    track("share_button_clicked", { platform: "whatsapp", user_id: generateReferralID() });
+  }
+
+  function shareViaFacebook(){
+    const input = document.getElementById("referralLinkInput");
+    const link = input ? input.value : getReferralLink();
+    window.open("https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(link));
+    track("share_button_clicked", { platform: "facebook", user_id: generateReferralID() });
+  }
+
+  function bookNow(){
+    track("conversion_action", { action_type: "book_now", user_id: generateReferralID(), risk_level: getRiskLevel() });
+    openCallModal();
+  }
+
+  function callNow(){
+    track("conversion_action", { action_type: "call_now", user_id: generateReferralID(), risk_level: getRiskLevel() });
+    openCallModal();
   }
 
   function buildAnswerSummary(){
@@ -840,6 +977,20 @@ ${payload.notes}
     return el;
   }
 
+  function renderShareSection(){
+    const level = getRiskLevel();
+    const link = getReferralLink();
+    const shareLinkHtml = '<div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 12px; padding: 15px; margin-bottom: 20px;"><p style="color: white; font-size: 14px; margin: 0 0 8px 0;">Your Referral Link:</p><div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;"><input type="text" id="referralLinkInput" value="' + link + '" readonly style="flex: 1; min-width: 180px; padding: 10px; border-radius: 8px; border: none; font-size: 14px;" /><button onclick="copyReferralLink()" style="padding: 10px 20px; background: white; color: #667eea; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Copy</button></div></div>';
+    const shareBtns = '<div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;"><button onclick="shareViaEmail()" class="share-btn">Share via Email</button><button onclick="shareViaWhatsApp()" class="share-btn">Share on WhatsApp</button><button onclick="shareViaFacebook()" class="share-btn">Share on Facebook</button></div>';
+    if (level === "green") {
+      return '<div class="share-section" style="margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; text-align: center;"><h3 style="color: white; margin: 0 0 10px 0;">Great News! Your Property is Low Risk</h3><p style="color: rgba(255,255,255,0.9); margin: 0 0 20px 0;">Help your friends check their properties too!<br><strong>Share with 3 friends - You & they each get $50 OFF</strong></p>' + shareLinkHtml + shareBtns + '<p style="color: rgba(255,255,255,0.8); font-size: 13px; margin: 15px 0 0 0;">When 3 friends complete the Snapshot, we will email you a <strong>$50 discount code</strong> for Essential Check ($795)</p></div>';
+    }
+    if (level === "yellow") {
+      return '<div class="share-section" style="margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 16px; text-align: center;"><h3 style="color: white; margin: 0 0 10px 0;">2 Issues Found - Book Professional Check Now</h3><p style="color: rgba(255,255,255,0.9); margin: 0 0 15px 0;">Save $50 on Professional Check ($1,480 to $1,430)<br><strong>OR refer 3 friends to unlock $100 OFF code!</strong></p>' + shareLinkHtml + shareBtns + '<div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap;"><button onclick="bookNow()" style="padding: 12px 30px; background: white; color: #f5576c; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 16px;">Book Check Now</button><button onclick="shareViaWhatsApp()" style="padding: 12px 30px; background: rgba(255,255,255,0.2); color: white; border: 2px solid white; border-radius: 8px; cursor: pointer; font-weight: 600;">Share to Save</button></div></div>';
+    }
+    return '<div class="share-section" style="margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%); border-radius: 16px; text-align: center; box-shadow: 0 0 30px rgba(255,8,68,0.3);"><h3 style="color: white; margin: 0 0 10px 0; font-size: 22px;">URGENT: 5 High-Risk Issues Found</h3><p style="color: white; margin: 0 0 15px 0; font-size: 16px; font-weight: 600;">Recommend booking inspection within 48 hours</p><p style="color: rgba(255,255,255,0.9); margin: 0 0 20px 0;">Your friends might have the same risks!<br>Help them check - You both get $50 OFF</p>' + shareLinkHtml + shareBtns + '<div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap;"><button onclick="callNow()" style="padding: 14px 35px; background: white; color: #ff0844; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 18px;">Call Now</button><button onclick="shareViaWhatsApp()" style="padding: 14px 30px; background: rgba(255,255,255,0.2); color: white; border: 2px solid white; border-radius: 8px; cursor: pointer; font-weight: 600;">Warn Friends</button></div></div>';
+  }
+
   function renderFinal(){
     setActiveStepTag(3);
     $("timeText").textContent = "";
@@ -848,7 +999,7 @@ ${payload.notes}
     // Track snapshot completion (only once, avoid duplicate events on re-render)
     const trackKey = 'snapshot_complete';
     if (!state._tracked[trackKey]) {
-      track('snapshot_complete', { uncertainty: uncertain ? 'yes' : 'no' });
+      track('snapshot_complete', { uncertainty: uncertain ? 'yes' : 'no', risk_level: getRiskLevel(), referred_by: localStorage.getItem('referredBy') || 'direct' });
       state._tracked[trackKey] = true;
     }
 
@@ -897,6 +1048,8 @@ ${payload.notes}
         <button class="ghost" id="restartBtn">Restart</button>
       </div>
 
+      ${renderShareSection()}
+
       <div class="small" style="margin-top:10px;">
         Fixed-fee • No repair quotes • No obligation to proceed
       </div>
@@ -908,7 +1061,17 @@ ${payload.notes}
     `;
 
     el.querySelector("#restartBtn").addEventListener("click", () => restart());
-    el.querySelector("#bookBtn").addEventListener("click", () => openCallModal());
+    el.querySelector("#bookBtn").addEventListener("click", () => { track("conversion_action", { action_type: "book_now", user_id: generateReferralID(), risk_level: getRiskLevel() }); openCallModal(); });
+    (function attachReferralLinkUpdate(){
+      const qcName = document.getElementById("qc_name");
+      const qcPhone = document.getElementById("qc_phone");
+      const upd = function(){
+        const inp = document.getElementById("referralLinkInput");
+        if (inp) { const rid = generateReferralID(); inp.value = window.location.origin + window.location.pathname + "?ref=" + rid; }
+      };
+      if (qcName) qcName.addEventListener("input", upd);
+      if (qcPhone) qcPhone.addEventListener("input", upd);
+    })();
     const leadFormBtn = el.querySelector("#leadFormBtn");
     if (leadFormBtn) leadFormBtn.addEventListener("click", () => {
       const trackKey = 'lead_form_view';
@@ -1103,7 +1266,7 @@ ${payload.notes}
         const res = await fetch("/.netlify/functions/send-booking", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type: "lead", lang: "en", name, phone, email, notes, summary }),
+          body: JSON.stringify({ type: "lead", lang: "en", name, phone, email, notes, summary, referredBy: localStorage.getItem("referredBy") || "direct" }),
         });
         const data = await res.json().catch(() => ({}));
         state.lead = { name, phone, email };
@@ -1397,6 +1560,7 @@ ${payload.notes}
           window: windowSel,
           notes,
           summary: buildAnswerSummary(),
+          referredBy: localStorage.getItem("referredBy") || "direct",
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -1415,13 +1579,27 @@ ${payload.notes}
 
 
 
-  // Ensure modal hidden on load
+  function showReferralBanner(referrerID){
+    const banner = document.createElement("div");
+    banner.id = "referralBanner";
+    banner.innerHTML = '<div style="background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 20px; text-align: center; font-size: 14px;">You were referred by a friend! Complete this check and you will both get <strong>$30 OFF</strong> discount codes.</div>';
+    document.body.insertBefore(banner, document.body.firstChild);
+  }
+
+  // Ensure modal hidden on load + ref param
   document.addEventListener("DOMContentLoaded", () => {
     const m = document.getElementById("callModal");
     if (m) m.style.display = "none";
-    
-    // Track page open
-    track('page_open', { page: 'risk_snapshot' });
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const referrerID = urlParams.get("ref");
+    if (referrerID) {
+      try { localStorage.setItem("referredBy", referrerID); } catch (e) {}
+      track("referral_visit", { referrer_id: referrerID });
+      showReferralBanner(referrerID);
+    }
+
+    track("page_open", { page: "risk_snapshot", referred_by: localStorage.getItem("referredBy") || "direct" });
   });
 
   // Start
