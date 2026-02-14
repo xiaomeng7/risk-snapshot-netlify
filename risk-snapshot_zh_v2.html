@@ -251,14 +251,14 @@
 
       <div class="badge"><span class="dot warn" id="dot"></span><span id="badgeText">提示</span></div>
       <p class="small" id="resultHint"></p>
-
-      <p class="small" style="margin-top:12px"><strong>这意味着什么：</strong><span id="resultMeans"></span></p>
-      <p class="small" style="margin-top:8px"><strong>下一步服务能提供：</strong></p>
-      <ul class="small" style="margin:4px 0 0 18px;color:var(--muted);">
-        <li>资产电气状况的客观证据（照片与数据）</li>
-        <li>未来 1–3 年维修/升级的优先级与预算路线图</li>
-        <li>可用于与租客、物业经理或保险公司沟通的专业报告</li>
-      </ul>
+      <div class="small" style="margin-top:14px;color:var(--muted);">
+        <strong>下一步服务能提供：</strong>
+        <ul style="margin:10px 0 0 18px;">
+          <li>资产电气状况的客观证据（照片与数据）</li>
+          <li>未来 1–3 年维修/升级的优先级与预算路线图</li>
+          <li>可用于与租客、物业经理或保险公司沟通的专业报告</li>
+        </ul>
+      </div>
 
       <div class="btns">
         <button class="btn" id="quickCallBtn">预约 15 分钟电话联系，免费解读快照结果</button>
@@ -691,12 +691,12 @@
     const shareLinkHtml = '<div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);border-radius:12px;padding:15px;margin-bottom:20px;"><p style="color:white;font-size:14px;margin:0 0 8px 0;">您的推荐链接：</p><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;"><input type="text" id="referralLinkInputZh" value="' + link + '" readonly style="flex:1;min-width:180px;padding:10px;border-radius:8px;border:none;font-size:14px;" /><button onclick="copyReferralLinkZh()" style="padding:10px 20px;background:white;color:#667eea;border:none;border-radius:8px;cursor:pointer;font-weight:600;">复制</button></div></div>';
     const shareBtns = '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;"><button onclick="shareViaEmailZh()" class="share-btn">邮件分享</button><button onclick="shareViaWhatsAppZh()" class="share-btn">WhatsApp</button><button onclick="shareViaFacebookZh()" class="share-btn">Facebook</button><button onclick="shareViaWeChatZh()" class="share-btn">微信</button></div>';
     if(level === "green"){
-      return '<div style="margin-top:30px;padding:20px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:16px;text-align:center;"><h3 style="color:white;margin:0 0 10px 0;">你的结果偏向：低不确定性</h3><p style="color:rgba(255,255,255,0.9);margin:0 0 20px 0;">这不代表房屋「没有风险」，只是说明你目前做电气决策时较少依赖猜测。若你觉得这个快照有价值，也可以分享给其他房东做参考。</p>' + shareLinkHtml + shareBtns + '<p style="color:rgba(255,255,255,0.8);font-size:13px;margin:15px 0 0 0;">分享给朋友完成快照后，我们会发送感谢优惠码（以邮件形式）。</p></div>';
+      return '<div style="margin-top:30px;padding:20px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:16px;text-align:center;"><h3 style="color:white;margin:0 0 10px 0;">分享此快照</h3><p style="color:rgba(255,255,255,0.9);margin:0 0 20px 0;">你可以分享给其他房东做参考。</p>' + shareLinkHtml + shareBtns + '<p style="color:rgba(255,255,255,0.8);font-size:13px;margin:15px 0 0 0;">朋友完成快照后，我们会发送感谢优惠码（以邮件形式）。</p></div>';
     }
     if(level === "yellow"){
-      return '<div style="margin-top:30px;padding:20px;background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);border-radius:16px;text-align:center;"><h3 style="color:white;margin:0 0 10px 0;">你的结果偏向：存在一定不确定性</h3><p style="color:rgba(255,255,255,0.9);margin:0 0 15px 0;">这不代表房屋一定有问题，而是提示：当未来遇到维修或投诉情境时，你可能需要更清晰的证据与优先级框架。你也可以把快照分享给朋友一起参考。</p>' + shareLinkHtml + shareBtns + '<div style="display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap;"><button onclick="openModal()" style="padding:12px 30px;background:white;color:#f5576c;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:16px;">预约 15 分钟电话沟通</button><button onclick="shareViaWhatsAppZh()" style="padding:12px 30px;background:rgba(255,255,255,0.2);color:white;border:2px solid white;border-radius:8px;cursor:pointer;font-weight:600;">分享给朋友</button></div></div>';
+      return '<div style="margin-top:30px;padding:20px;background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);border-radius:16px;text-align:center;"><h3 style="color:white;margin:0 0 10px 0;">分享此快照</h3><p style="color:rgba(255,255,255,0.9);margin:0 0 20px 0;">你可以分享给其他房东做参考。</p>' + shareLinkHtml + shareBtns + '<p style="color:rgba(255,255,255,0.8);font-size:13px;margin:15px 0 0 0;">朋友完成快照后，我们会发送感谢优惠码（以邮件形式）。</p></div>';
     }
-    return '<div style="margin-top:30px;padding:20px;background:linear-gradient(135deg,#ff0844 0%,#ffb199 100%);border-radius:16px;text-align:center;box-shadow:0 0 30px rgba(255,8,68,0.3);"><h3 style="color:white;margin:0 0 10px 0;font-size:22px;">你的结果偏向：不确定性较高（建议进一步确认）</h3><p style="color:rgba(255,255,255,0.9);margin:0 0 20px 0;">这不代表已确认存在安全故障。它提示你可能在压力情境下（如租客投诉/跳闸/紧急维修）更容易陷入不确定。独立评估的价值是提供可依据的证据与优先级路径，帮助你做更稳的决策。你也可以分享给其他房东参考。</p>' + shareLinkHtml + shareBtns + '<div style="display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap;"><button onclick="openModal()" style="padding:14px 35px;background:white;color:#ff0844;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:18px;">预约 15 分钟电话沟通</button><button onclick="shareViaWhatsAppZh()" style="padding:14px 30px;background:rgba(255,255,255,0.2);color:white;border:2px solid white;border-radius:8px;cursor:pointer;font-weight:600;">分享给朋友</button></div></div>';
+    return '<div style="margin-top:30px;padding:20px;background:linear-gradient(135deg,#ff0844 0%,#ffb199 100%);border-radius:16px;text-align:center;box-shadow:0 0 30px rgba(255,8,68,0.3);"><h3 style="color:white;margin:0 0 10px 0;">分享此快照</h3><p style="color:rgba(255,255,255,0.9);margin:0 0 20px 0;">你可以分享给其他房东做参考。</p>' + shareLinkHtml + shareBtns + '<p style="color:rgba(255,255,255,0.8);font-size:13px;margin:15px 0 0 0;">朋友完成快照后，我们会发送感谢优惠码（以邮件形式）。</p></div>';
   }
 
   function showResult(){
@@ -706,13 +706,6 @@
     const badgeText = document.getElementById("badgeText");
     const hint = document.getElementById("resultHint");
     const debug = document.getElementById("debugLine");
-
-    const resultMeansEl = document.getElementById("resultMeans");
-    if(resultMeansEl){
-      if(s <= 2) resultMeansEl.textContent = "你的决策较少依赖猜测；如需把未来电气支出做成更清晰的规划视图，可了解独立评估。";
-      else if(s <= 6) resultMeansEl.textContent = "部分决策可能存在信息缺口；独立评估可提供证据与优先级框架，让未来决策更清晰。";
-      else resultMeansEl.textContent = "在压力情境下更容易陷入不确定；独立评估可在问题升级前提供可依据的判断与规划路径。";
-    }
 
     if(s <= 2){
       dot.className = "dot";

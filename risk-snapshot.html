@@ -983,12 +983,12 @@ ${payload.notes}
     const shareLinkHtml = '<div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 12px; padding: 15px; margin-bottom: 20px;"><p style="color: white; font-size: 14px; margin: 0 0 8px 0;">Your Referral Link:</p><div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;"><input type="text" id="referralLinkInput" value="' + link + '" readonly style="flex: 1; min-width: 180px; padding: 10px; border-radius: 8px; border: none; font-size: 14px;" /><button onclick="copyReferralLink()" style="padding: 10px 20px; background: white; color: #667eea; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Copy</button></div></div>';
     const shareBtns = '<div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;"><button onclick="shareViaEmail()" class="share-btn">Share via Email</button><button onclick="shareViaWhatsApp()" class="share-btn">Share on WhatsApp</button><button onclick="shareViaFacebook()" class="share-btn">Share on Facebook</button></div>';
     if (level === "green") {
-      return '<div class="share-section" style="margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; text-align: center;"><h3 style="color: white; margin: 0 0 10px 0;">Your result indicates low uncertainty</h3><p style="color: rgba(255,255,255,0.9); margin: 0 0 20px 0;">This does not mean the property has no risk. It suggests that your decisions are currently less dependent on guesswork. If you found this snapshot helpful, you\'re welcome to share it with other property owners.</p>' + shareLinkHtml + shareBtns + '<p style="color: rgba(255,255,255,0.8); font-size: 13px; margin: 15px 0 0 0;">When friends complete the snapshot, we\'ll send a thank-you discount code by email.</p></div>';
+      return '<div class="share-section" style="margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; text-align: center;"><h3 style="color: white; margin: 0 0 10px 0;">Share this snapshot</h3><p style="color: rgba(255,255,255,0.9); margin: 0 0 20px 0;">You may share it with other property owners for reference.</p>' + shareLinkHtml + shareBtns + '<p style="color: rgba(255,255,255,0.8); font-size: 13px; margin: 15px 0 0 0;">When friends complete the snapshot, we\'ll send a thank-you discount code by email.</p></div>';
     }
     if (level === "yellow") {
-      return '<div class="share-section" style="margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 16px; text-align: center;"><h3 style="color: white; margin: 0 0 10px 0;">Your result indicates some decision uncertainty</h3><p style="color: rgba(255,255,255,0.9); margin: 0 0 15px 0;">This does not imply a confirmed issue. It suggests that clearer documentation and prioritisation may improve future decision-making. You may also share this snapshot with other property owners for reference.</p>' + shareLinkHtml + shareBtns + '<div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap;"><button onclick="bookNow()" style="padding: 12px 30px; background: white; color: #f5576c; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 16px;">Book a 15-minute review call</button><button onclick="shareViaWhatsApp()" style="padding: 12px 30px; background: rgba(255,255,255,0.2); color: white; border: 2px solid white; border-radius: 8px; cursor: pointer; font-weight: 600;">Share with others</button></div></div>';
+      return '<div class="share-section" style="margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 16px; text-align: center;"><h3 style="color: white; margin: 0 0 10px 0;">Share this snapshot</h3><p style="color: rgba(255,255,255,0.9); margin: 0 0 20px 0;">You may share it with other property owners for reference.</p>' + shareLinkHtml + shareBtns + '<p style="color: rgba(255,255,255,0.8); font-size: 13px; margin: 15px 0 0 0;">When friends complete the snapshot, we\'ll send a thank-you discount code by email.</p></div>';
     }
-    return '<div class="share-section" style="margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%); border-radius: 16px; text-align: center; box-shadow: 0 0 30px rgba(255,8,68,0.3);"><h3 style="color: white; margin: 0 0 10px 0; font-size: 22px;">Your result indicates higher decision uncertainty</h3><p style="color: rgba(255,255,255,0.9); margin: 0 0 20px 0;">This does not confirm a safety fault. It suggests that in higher-pressure situations — such as tenant concerns or urgent repairs — decisions may benefit from structured evidence and prioritisation. An independent assessment is designed to provide clarity before escalation.</p>' + shareLinkHtml + shareBtns + '<div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap;"><button onclick="callNow()" style="padding: 14px 35px; background: white; color: #ff0844; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 18px;">Book a 15-minute review call</button><button onclick="shareViaWhatsApp()" style="padding: 14px 30px; background: rgba(255,255,255,0.2); color: white; border: 2px solid white; border-radius: 8px; cursor: pointer; font-weight: 600;">Share with others</button></div></div>';
+    return '<div class="share-section" style="margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%); border-radius: 16px; text-align: center; box-shadow: 0 0 30px rgba(255,8,68,0.3);"><h3 style="color: white; margin: 0 0 10px 0;">Share this snapshot</h3><p style="color: rgba(255,255,255,0.9); margin: 0 0 20px 0;">You may share it with other property owners for reference.</p>' + shareLinkHtml + shareBtns + '<p style="color: rgba(255,255,255,0.8); font-size: 13px; margin: 15px 0 0 0;">When friends complete the snapshot, we\'ll send a thank-you discount code by email.</p></div>';
   }
 
   function renderFinal(){
@@ -1007,12 +1007,10 @@ ${payload.notes}
     const badgeText = level === "green" ? "Low decision uncertainty" : level === "yellow" ? "Some decision uncertainty identified" : "Higher decision uncertainty — further clarification recommended";
     const mainText = level === "green" ? "Based on your responses, you generally feel confident making electrical-related decisions." : level === "yellow" ? "Based on your responses, there may be areas where electrical decisions are made with incomplete information or limited confidence." : "Based on your responses, you may frequently face uncertainty, hesitation, or the need for additional reassurance when making electrical decisions.";
     const hintText = level === "green" ? "This does not mean the property has no risk. It simply suggests that your decisions are currently less influenced by uncertainty. If you would like to turn future electrical spending into a clearer 1–5 year planning view, an independent assessment may still be valuable." : level === "yellow" ? "This does not mean there is a confirmed problem. It simply indicates that in situations such as repair recommendations or tenant concerns, you may benefit from clearer evidence and prioritisation." : "This does not mean a safety fault has been identified. It suggests that when decisions arise under pressure — such as tenant complaints, tripping circuits, or urgent repairs — the absence of a structured framework may increase financial or responsibility risk. The purpose of an independent assessment is to provide documented evidence and a planning pathway before problems escalate.";
-    const meansText = level === "green" ? "Your decisions rely less on guesswork. If you want a structured long-term planning view for future electrical expenses, an independent assessment can help formalise that." : level === "yellow" ? "Some decisions may lack structured visibility. An independent assessment can provide documented evidence and a priority framework to support future decisions." : "In higher-pressure scenarios, uncertainty can increase decision risk. An independent assessment provides structured judgement, prioritisation, and documentation before issues escalate.";
 
     const el = document.createElement("div");
     el.innerHTML = `
       <h2>Your "Electrical Decision Confidence Brief" is ready</h2>
-      <p class="sub">What this means & next step</p>
 
       <div class="resultBox">
         <span class="badge ${level === "green" ? "" : "ok"}">${badgeText}</span>
@@ -1020,24 +1018,14 @@ ${payload.notes}
           ${mainText}<br/><br/>
           ${hintText}
         </div>
-      </div>
-
-      <div class="hr"></div>
-
-      <div class="small">
-        <h3>What this means</h3>
-        ${meansText}
-      </div>
-
-      <div class="resultBox" style="margin-top:14px">
-        <h3>What the next step can provide</h3>
-        <div class="small">
-          <ul style="margin:10px 0 0 18px; color: var(--muted);">
+        <div class="small" style="margin-top:14px; color: var(--muted);">
+          <strong>What the next step can provide:</strong>
+          <ul style="margin:10px 0 0 18px;">
             <li>Objective evidence of electrical condition (photos &amp; data)</li>
             <li>A 1–3 year priority and budget roadmap (planning only)</li>
             <li>A professional report you can use with tenants, property managers, or insurers</li>
           </ul>
-          <div style="margin-top:10px" class="small"><strong>Most clients use this as clarity first — not to approve work immediately.</strong></div>
+          <em>Most clients use this as clarity first — not to approve work immediately.</em>
         </div>
       </div>
 
