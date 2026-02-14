@@ -691,12 +691,12 @@
     const shareLinkHtml = '<div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);border-radius:12px;padding:15px;margin-bottom:20px;"><p style="color:white;font-size:14px;margin:0 0 8px 0;">您的推荐链接：</p><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;"><input type="text" id="referralLinkInputZh" value="' + link + '" readonly style="flex:1;min-width:180px;padding:10px;border-radius:8px;border:none;font-size:14px;" /><button onclick="copyReferralLinkZh()" style="padding:10px 20px;background:white;color:#667eea;border:none;border-radius:8px;cursor:pointer;font-weight:600;">复制</button></div></div>';
     const shareBtns = '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;"><button onclick="shareViaEmailZh()" class="share-btn">邮件分享</button><button onclick="shareViaWhatsAppZh()" class="share-btn">WhatsApp</button><button onclick="shareViaFacebookZh()" class="share-btn">Facebook</button><button onclick="shareViaWeChatZh()" class="share-btn">微信</button></div>';
     if(level === "green"){
-      return '<div style="margin-top:30px;padding:20px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:16px;text-align:center;"><h3 style="color:white;margin:0 0 10px 0;">太棒了！您的投资房电路健康状况良好！</h3><p style="color:rgba(255,255,255,0.9);margin:0 0 20px 0;">帮朋友也检查一下！<br><strong>分享给3位朋友，您和他们各得$50优惠码</strong></p>' + shareLinkHtml + shareBtns + '<p style="color:rgba(255,255,255,0.8);font-size:13px;margin:15px 0 0 0;">当3位朋友完成快照后，我们将邮件发送<strong>$50优惠码</strong>（Essential Check $795）</p></div>';
+      return '<div style="margin-top:30px;padding:20px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:16px;text-align:center;"><h3 style="color:white;margin:0 0 10px 0;">你的结果偏向：低不确定性</h3><p style="color:rgba(255,255,255,0.9);margin:0 0 20px 0;">这不代表房屋「没有风险」，只是说明你目前做电气决策时较少依赖猜测。若你觉得这个快照有价值，也可以分享给其他房东做参考。</p>' + shareLinkHtml + shareBtns + '<p style="color:rgba(255,255,255,0.8);font-size:13px;margin:15px 0 0 0;">分享给朋友完成快照后，我们会发送感谢优惠码（以邮件形式）。</p></div>';
     }
     if(level === "yellow"){
-      return '<div style="margin-top:30px;padding:20px;background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);border-radius:16px;text-align:center;"><h3 style="color:white;margin:0 0 10px 0;">发现2项需要关注的问题 - 立即预约专业检查</h3><p style="color:rgba(255,255,255,0.9);margin:0 0 15px 0;">现在预约省$50，或推荐3位朋友解锁$100优惠！</p>' + shareLinkHtml + shareBtns + '<div style="display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap;"><button onclick="openModal()" style="padding:12px 30px;background:white;color:#f5576c;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:16px;">立即预约</button><button onclick="shareViaWhatsAppZh()" style="padding:12px 30px;background:rgba(255,255,255,0.2);color:white;border:2px solid white;border-radius:8px;cursor:pointer;font-weight:600;">分享省钱</button></div></div>';
+      return '<div style="margin-top:30px;padding:20px;background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);border-radius:16px;text-align:center;"><h3 style="color:white;margin:0 0 10px 0;">你的结果偏向：存在一定不确定性</h3><p style="color:rgba(255,255,255,0.9);margin:0 0 15px 0;">这不代表房屋一定有问题，而是提示：当未来遇到维修或投诉情境时，你可能需要更清晰的证据与优先级框架。你也可以把快照分享给朋友一起参考。</p>' + shareLinkHtml + shareBtns + '<div style="display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap;"><button onclick="openModal()" style="padding:12px 30px;background:white;color:#f5576c;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:16px;">预约 15 分钟电话沟通</button><button onclick="shareViaWhatsAppZh()" style="padding:12px 30px;background:rgba(255,255,255,0.2);color:white;border:2px solid white;border-radius:8px;cursor:pointer;font-weight:600;">分享给朋友</button></div></div>';
     }
-    return '<div style="margin-top:30px;padding:20px;background:linear-gradient(135deg,#ff0844 0%,#ffb199 100%);border-radius:16px;text-align:center;box-shadow:0 0 30px rgba(255,8,68,0.3);"><h3 style="color:white;margin:0 0 10px 0;font-size:22px;">紧急！发现5项高风险问题</h3><p style="color:white;margin:0 0 15px 0;font-size:16px;font-weight:600;">建议48小时内预约检查</p><p style="color:rgba(255,255,255,0.9);margin:0 0 20px 0;">您的朋友可能也有同样风险！<br>帮助他们检查，双方各得$50优惠</p>' + shareLinkHtml + shareBtns + '<div style="display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap;"><button onclick="openModal()" style="padding:14px 35px;background:white;color:#ff0844;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:18px;">立即致电</button><button onclick="shareViaWhatsAppZh()" style="padding:14px 30px;background:rgba(255,255,255,0.2);color:white;border:2px solid white;border-radius:8px;cursor:pointer;font-weight:600;">提醒朋友</button></div></div>';
+    return '<div style="margin-top:30px;padding:20px;background:linear-gradient(135deg,#ff0844 0%,#ffb199 100%);border-radius:16px;text-align:center;box-shadow:0 0 30px rgba(255,8,68,0.3);"><h3 style="color:white;margin:0 0 10px 0;font-size:22px;">你的结果偏向：不确定性较高（建议进一步确认）</h3><p style="color:rgba(255,255,255,0.9);margin:0 0 20px 0;">这不代表已确认存在安全故障。它提示你可能在压力情境下（如租客投诉/跳闸/紧急维修）更容易陷入不确定。独立评估的价值是提供可依据的证据与优先级路径，帮助你做更稳的决策。你也可以分享给其他房东参考。</p>' + shareLinkHtml + shareBtns + '<div style="display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap;"><button onclick="openModal()" style="padding:14px 35px;background:white;color:#ff0844;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:18px;">预约 15 分钟电话沟通</button><button onclick="shareViaWhatsAppZh()" style="padding:14px 30px;background:rgba(255,255,255,0.2);color:white;border:2px solid white;border-radius:8px;cursor:pointer;font-weight:600;">分享给朋友</button></div></div>';
   }
 
   function showResult(){
@@ -709,26 +709,26 @@
 
     const resultMeansEl = document.getElementById("resultMeans");
     if(resultMeansEl){
-      if(s <= 2) resultMeansEl.textContent = "您目前的决策较少受不确定性影响；若希望系统规划未来 1–5 年电气支出，可了解独立评估。";
-      else if(s <= 6) resultMeansEl.textContent = "部分决策可能存在信息不足；独立评估可让未来支出与投诉时的决策更清晰。";
-      else resultMeansEl.textContent = "在压力下做决定时最容易多花钱或担责；独立评估可在问题升级前给您可依据的判断与规划。";
+      if(s <= 2) resultMeansEl.textContent = "你的决策较少依赖猜测；如需把未来电气支出做成更清晰的规划视图，可了解独立评估。";
+      else if(s <= 6) resultMeansEl.textContent = "部分决策可能存在信息缺口；独立评估可提供证据与优先级框架，让未来决策更清晰。";
+      else resultMeansEl.textContent = "在压力情境下更容易陷入不确定；独立评估可在问题升级前提供可依据的判断与规划路径。";
     }
 
     if(s <= 2){
       dot.className = "dot";
-      badgeText.textContent = "你的决策信心较高";
+      badgeText.textContent = "决策不确定性较低";
       resultText.innerHTML = "从你的回答来看，你在电气相关决策上通常比较有把握。";
-      hint.textContent = "这不代表“完全没风险”，只是说明你目前的决策不太受不确定性影响。如果你希望把未来 1–5 年可能的电气支出更系统地规划，也可以了解我们的独立评估。";
+      hint.textContent = "这不代表房屋「完全没有风险」，只是说明你目前的决策较少受不确定性影响。若你希望把未来 1–5 年可能的电气支出更系统地规划，可以了解独立评估。";
     }else if(s <= 6){
       dot.className = "dot warn";
       badgeText.textContent = "存在一定不确定性";
       resultText.innerHTML = "从你的回答来看，你在部分电气决策上可能存在信息不足或信心不足的情况。";
-      hint.textContent = "这不代表房子一定有问题。它只是提示：未来遇到电气支出或租客投诉时，你可能会更容易陷入‘要不要做/会不会被坑’的困境。独立评估可以把这些决策变得更清晰。";
+      hint.textContent = "这不代表房子一定有问题。它只是提示：未来遇到电气支出或租客投诉时，你可能更需要清晰的证据与优先级框架。独立评估可以帮助你把这些决策变得更清晰。";
     }else{
       dot.className = "dot danger";
       badgeText.textContent = "不确定性较高，建议进一步确认";
-      resultText.innerHTML = "从你的回答来看，你目前在电气决策上可能经常处于“不确定/犹豫/意见不一致”的状态。";
-      hint.textContent = "当决策在压力下发生时（例如租客投诉、跳闸、紧急维修），最容易出现过度支出或责任风险。独立评估的目的，是在问题升级前给你一个可依据的判断和规划路径。";
+      resultText.innerHTML = "从你的回答来看，你目前在电气决策上可能经常处于不确定、犹豫或需要额外依据的状态。";
+      hint.textContent = "这不代表已确认存在安全故障。它提示：当决策在压力下发生时（例如租客投诉、跳闸、紧急维修），更容易出现过度支出或责任风险。独立评估的目的，是在问题升级前为你提供可依据的判断与规划路径。";
     }
 
     // 内部记录不向用户展示
