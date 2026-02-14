@@ -246,17 +246,10 @@
       <div class="step-progress" id="step3Progress">Step 3 of 4</div>
       <h2>您的《电气决策信心评估简报》已生成</h2>
 
-      <div id="redResultBoxZh" style="display:none; margin-bottom:20px; padding:24px; background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%); border-radius: 16px; color: white; box-shadow: 0 0 30px rgba(255,8,68,0.2);">
-        <div class="badge" style="background: rgba(255,255,255,0.3); color: white;"><span class="dot danger"></span><span id="badgeTextRed">不确定性较高，建议进一步确认</span></div>
-        <p class="small" id="resultTextRed" style="color: rgba(255,255,255,0.95); margin-top:12px;"></p>
-        <p class="small" id="resultHintRed" style="color: rgba(255,255,255,0.95); margin-top:8px;"></p>
-      </div>
-
-      <div id="normalResultContentZh">
-        <p id="resultText">结果生成中…</p>
-        <div class="divider"></div>
-        <div class="badge"><span class="dot warn" id="dot"></span><span id="badgeText">提示</span></div>
-        <p class="small" id="resultHint"></p>
+      <div id="coloredResultBoxZh" style="margin-bottom:20px; padding:24px; border-radius: 16px; color: white;">
+        <div class="badge" style="background: rgba(255,255,255,0.3); color: white;"><span class="dot" id="dotZh"></span><span id="badgeTextZh">结果生成中…</span></div>
+        <p class="small" id="resultTextZh" style="color: rgba(255,255,255,0.95); margin-top:12px;"></p>
+        <p class="small" id="resultHintZh" style="color: rgba(255,255,255,0.95); margin-top:8px;"></p>
       </div>
 
       <div class="small" style="margin-top:14px;color:var(--muted);">
@@ -694,47 +687,41 @@
   }
 
   function renderShareSectionZh(){
-    const level = getRiskLevelZh();
     const link = getReferralLinkZh();
-    const shareLinkHtml = '<div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);border-radius:12px;padding:15px;margin-bottom:20px;"><p style="color:white;font-size:14px;margin:0 0 8px 0;">您的推荐链接：</p><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;"><input type="text" id="referralLinkInputZh" value="' + link + '" readonly style="flex:1;min-width:180px;padding:10px;border-radius:8px;border:none;font-size:14px;" /><button onclick="copyReferralLinkZh()" style="padding:10px 20px;background:white;color:#667eea;border:none;border-radius:8px;cursor:pointer;font-weight:600;">复制</button></div></div>';
     const shareLinkHtmlPlain = '<div style="background:#f5f5f5;border-radius:12px;padding:15px;margin-bottom:20px;"><p style="color:#333;font-size:14px;margin:0 0 8px 0;">您的推荐链接：</p><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;"><input type="text" id="referralLinkInputZh" value="' + link + '" readonly style="flex:1;min-width:180px;padding:10px;border-radius:8px;border:1px solid #ddd;font-size:14px;background:white;" /><button onclick="copyReferralLinkZh()" style="padding:10px 20px;background:#667eea;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;">复制</button></div></div>';
     const shareBtns = '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;"><button onclick="shareViaEmailZh()" class="share-btn">邮件分享</button><button onclick="shareViaWhatsAppZh()" class="share-btn">WhatsApp</button><button onclick="shareViaFacebookZh()" class="share-btn">Facebook</button><button onclick="shareViaWeChatZh()" class="share-btn">微信</button></div>';
-    if(level === "green"){
-      return '<div style="margin-top:30px;padding:20px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:16px;text-align:center;"><h3 style="color:white;margin:0 0 10px 0;">分享此快照</h3><p style="color:rgba(255,255,255,0.9);margin:0 0 20px 0;">你可以分享给其他房东做参考。</p>' + shareLinkHtml + shareBtns + '<p style="color:rgba(255,255,255,0.8);font-size:13px;margin:15px 0 0 0;">朋友完成快照后，我们会发送感谢优惠码（以邮件形式）。</p></div>';
-    }
-    if(level === "yellow"){
-      return '<div style="margin-top:30px;padding:20px;background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);border-radius:16px;text-align:center;"><h3 style="color:white;margin:0 0 10px 0;">分享此快照</h3><p style="color:rgba(255,255,255,0.9);margin:0 0 20px 0;">你可以分享给其他房东做参考。</p>' + shareLinkHtml + shareBtns + '<p style="color:rgba(255,255,255,0.8);font-size:13px;margin:15px 0 0 0;">朋友完成快照后，我们会发送感谢优惠码（以邮件形式）。</p></div>';
-    }
     return '<div style="margin-top:30px;padding:20px;background:#fff;border:1px solid #eee;border-radius:16px;text-align:center;"><h3 style="color:#333;margin:0 0 10px 0;">分享此快照</h3><p style="color:#666;margin:0 0 20px 0;">你可以分享给其他房东做参考。</p>' + shareLinkHtmlPlain + shareBtns + '<p style="color:#888;font-size:13px;margin:15px 0 0 0;">朋友完成快照后，我们会发送感谢优惠码（以邮件形式）。</p></div>';
   }
 
   function showResult(){
     const s = score();
-    const resultText = document.getElementById("resultText");
-    const dot = document.getElementById("dot");
-    const badgeText = document.getElementById("badgeText");
-    const hint = document.getElementById("resultHint");
-    const debug = document.getElementById("debugLine");
+    const box = document.getElementById("coloredResultBoxZh");
+    const dot = document.getElementById("dotZh");
+    const badgeText = document.getElementById("badgeTextZh");
+    const resultText = document.getElementById("resultTextZh");
+    const hint = document.getElementById("resultHintZh");
 
     if(s <= 2){
-      document.getElementById("redResultBoxZh").style.display = "none";
-      document.getElementById("normalResultContentZh").style.display = "block";
+      box.style.background = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
+      box.style.boxShadow = "0 4px 20px rgba(0,0,0,0.1)";
       dot.className = "dot";
       badgeText.textContent = "决策不确定性较低";
-      resultText.innerHTML = "从你的回答来看，你在电气相关决策上通常比较有把握。";
+      resultText.textContent = "从你的回答来看，你在电气相关决策上通常比较有把握。";
       hint.textContent = "这不代表房屋「完全没有风险」，只是说明你目前的决策较少受不确定性影响。若你希望把未来 1–5 年可能的电气支出更系统地规划，可以了解独立评估。";
     }else if(s <= 6){
-      document.getElementById("redResultBoxZh").style.display = "none";
-      document.getElementById("normalResultContentZh").style.display = "block";
+      box.style.background = "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)";
+      box.style.boxShadow = "0 4px 20px rgba(0,0,0,0.1)";
       dot.className = "dot warn";
       badgeText.textContent = "存在一定不确定性";
-      resultText.innerHTML = "从你的回答来看，你在部分电气决策上可能存在信息不足或信心不足的情况。";
+      resultText.textContent = "从你的回答来看，你在部分电气决策上可能存在信息不足或信心不足的情况。";
       hint.textContent = "这不代表房子一定有问题。它只是提示：未来遇到电气支出或租客投诉时，你可能更需要清晰的证据与优先级框架。独立评估可以帮助你把这些决策变得更清晰。";
     }else{
-      document.getElementById("redResultBoxZh").style.display = "block";
-      document.getElementById("normalResultContentZh").style.display = "none";
-      document.getElementById("resultTextRed").textContent = "从你的回答来看，你目前在电气决策上可能经常处于不确定、犹豫或需要额外依据的状态。";
-      document.getElementById("resultHintRed").textContent = "这不代表已确认存在安全故障。它提示：当决策在压力下发生时（例如租客投诉、跳闸、紧急维修），更容易出现过度支出或责任风险。独立评估的目的，是在问题升级前为你提供可依据的判断与规划路径。";
+      box.style.background = "linear-gradient(135deg, #ff0844 0%, #ffb199 100%)";
+      box.style.boxShadow = "0 0 30px rgba(255,8,68,0.2)";
+      dot.className = "dot danger";
+      badgeText.textContent = "不确定性较高，建议进一步确认";
+      resultText.textContent = "从你的回答来看，你目前在电气决策上可能经常处于不确定、犹豫或需要额外依据的状态。";
+      hint.textContent = "这不代表已确认存在安全故障。它提示：当决策在压力下发生时（例如租客投诉、跳闸、紧急维修），更容易出现过度支出或责任风险。独立评估的目的，是在问题升级前为你提供可依据的判断与规划路径。";
     }
 
     // 内部记录不向用户展示
