@@ -978,10 +978,19 @@ ${payload.notes}
   }
 
   function renderShareSection(){
+    const level = getRiskLevel();
     const link = getReferralLink();
-    const shareLinkHtmlPlain = '<div style="background: #f5f5f5; border-radius: 12px; padding: 15px; margin-bottom: 20px;"><p style="color: #333; font-size: 14px; margin: 0 0 8px 0;">Your Referral Link:</p><div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;"><input type="text" id="referralLinkInput" value="' + link + '" readonly style="flex: 1; min-width: 180px; padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-size: 14px; background: white;" /><button onclick="copyReferralLink()" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Copy</button></div></div>';
+    const shareLinkHtml = '<div style="background: #f5f5f5; border-radius: 12px; padding: 15px; margin-bottom: 20px;"><p style="color: #333; font-size: 14px; margin: 0 0 8px 0;">Your Referral Link:</p><div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;"><input type="text" id="referralLinkInput" value="' + link + '" readonly style="flex: 1; min-width: 180px; padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-size: 14px; background: white; color: #222;" /><button onclick="copyReferralLink()" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Copy</button></div></div>';
     const shareBtns = '<div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;"><button onclick="shareViaEmail()" class="share-btn">Share via Email</button><button onclick="shareViaWhatsApp()" class="share-btn">Share on WhatsApp</button><button onclick="shareViaFacebook()" class="share-btn">Share on Facebook</button></div>';
-    return '<div class="share-section" style="margin-top: 30px; padding: 20px; background: #fff; border: 1px solid #eee; border-radius: 16px; text-align: center;"><h3 style="color: #333; margin: 0 0 10px 0;">Share this snapshot</h3><p style="color: #666; margin: 0 0 20px 0;">You may share it with other property owners for reference.</p>' + shareLinkHtmlPlain + shareBtns + '<p style="color: #888; font-size: 13px; margin: 15px 0 0 0;">When friends complete the snapshot, we\'ll send a thank-you discount code by email.</p></div>';
+    const panelStyle = level === "green"
+      ? "margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #2f9e44 0%, #69db7c 100%); border-radius: 16px; text-align: center;"
+      : level === "yellow"
+      ? "margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #ffd43b 0%, #fab005 100%); border-radius: 16px; text-align: center;"
+      : "margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #fa5252 0%, #e03131 100%); border-radius: 16px; text-align: center;";
+    const titleColor = level === "yellow" ? "#2b2b2b" : "white";
+    const bodyColor = level === "yellow" ? "rgba(43,43,43,0.9)" : "rgba(255,255,255,0.9)";
+    const footColor = level === "yellow" ? "rgba(43,43,43,0.8)" : "rgba(255,255,255,0.85)";
+    return '<div class="share-section" style="' + panelStyle + '"><h3 style="color: ' + titleColor + '; margin: 0 0 10px 0;">Share this snapshot</h3><p style="color: ' + bodyColor + '; margin: 0 0 20px 0;">You may share it with other property owners for reference.</p>' + shareLinkHtml + shareBtns + '<p style="color: ' + footColor + '; font-size: 13px; margin: 15px 0 0 0;">When friends complete the snapshot, we\'ll send a thank-you discount code by email.</p></div>';
   }
 
   function renderFinal(){
@@ -1001,9 +1010,15 @@ ${payload.notes}
     const mainText = level === "green" ? "Based on your responses, you generally feel confident making electrical-related decisions." : level === "yellow" ? "Based on your responses, there may be areas where electrical decisions are made with incomplete information or limited confidence." : "Based on your responses, you may frequently face uncertainty, hesitation, or the need for additional reassurance when making electrical decisions.";
     const hintText = level === "green" ? "This does not mean the property has no risk. It simply suggests that your decisions are currently less influenced by uncertainty. If you would like to turn future electrical spending into a clearer 1–5 year planning view, an independent assessment may still be valuable." : level === "yellow" ? "This does not mean there is a confirmed problem. It simply indicates that in situations such as repair recommendations or tenant concerns, you may benefit from clearer evidence and prioritisation." : "This does not mean a safety fault has been identified. It suggests that when decisions arise under pressure — such as tenant complaints, tripping circuits, or urgent repairs — the absence of a structured framework may increase financial or responsibility risk. The purpose of an independent assessment is to provide documented evidence and a planning pathway before problems escalate.";
 
-    const boxGradient = level === "green" ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" : level === "yellow" ? "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" : "linear-gradient(135deg, #ff0844 0%, #ffb199 100%)";
-    const boxShadow = level === "red" ? "0 0 30px rgba(255,8,68,0.2)" : "0 4px 20px rgba(0,0,0,0.1)";
-    const coloredResultBox = `<div class="resultBox" style="margin-bottom:20px; padding:24px; background: ${boxGradient}; border-radius: 16px; color: white; box-shadow: ${boxShadow};"><span class="badge" style="background: rgba(255,255,255,0.3); color: white;">${badgeText}</span><div class="small" style="color: rgba(255,255,255,0.95); margin-top:12px;">${mainText}<br/><br/>${hintText}</div></div>`;
+    const boxGradient = level === "green"
+      ? "linear-gradient(135deg, #2f9e44 0%, #69db7c 100%)"
+      : level === "yellow"
+      ? "linear-gradient(135deg, #ffd43b 0%, #fab005 100%)"
+      : "linear-gradient(135deg, #fa5252 0%, #e03131 100%)";
+    const boxShadow = level === "red" ? "0 0 24px rgba(224,49,49,0.25)" : "0 4px 20px rgba(0,0,0,0.1)";
+    const boxTextColor = level === "yellow" ? "#2b2b2b" : "#ffffff";
+    const badgeBg = level === "yellow" ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.28)";
+    const coloredResultBox = `<div class="resultBox" style="margin-bottom:20px; padding:24px; background: ${boxGradient}; border-radius: 16px; color: ${boxTextColor}; box-shadow: ${boxShadow};"><span class="badge" style="background: ${badgeBg}; color: ${boxTextColor}; border-color: transparent;">${badgeText}</span><div class="small" style="color: ${boxTextColor}; margin-top:12px;">${mainText}<br/><br/>${hintText}</div></div>`;
 
     const el = document.createElement("div");
     el.innerHTML = `
